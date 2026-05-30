@@ -1,0 +1,46 @@
+[project]
+name = "spy_vol"
+version = "0.1.0"
+description = "SPY volatility regime prediction and VXX trading strategy"
+requires-python = ">=3.11"
+dependencies = [
+    "databento>=0.45",
+    "yfinance>=0.2.40",
+    "pandas-datareader>=0.10",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=15",
+    "scipy>=1.13",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "py-vollib>=1.0.1",
+    "torch>=2.3",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5", "ipykernel>=6.29", "shap>=0.44"]
+report = ["jupyter>=1.0", "nbformat>=5.10"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ingest*", "features*", "models*", "backtest*", "report*", "live*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["**/__pycache__", "**/.ipynb_checkpoints"]
+
+[tool.ruff.lint.per-file-ignores]
+# Notebooks deliberately mutate sys.path before importing project modules,
+# and have compact tutorial-style multi-statement lines.
+"notebooks/**/*.ipynb" = ["E402", "E702"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

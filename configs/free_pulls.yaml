@@ -1,0 +1,13 @@
+start: "2023-01-01"
+end: "2026-04-30"
+
+yfinance:
+  - ^VIX
+  - ^VIX9D
+  - ^VIX3M
+  - ^VVIX
+  - SPY
+  - VXX
+
+fred:
+  - DGS3MO         # 3-month T-bill, used as risk-free rate in IV inversion

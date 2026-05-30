@@ -1,0 +1,202 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+
+\title{Realised-Volatility Regime Classification on SPY\\
+\large{Dealer Gamma, VIX Term Structure, and a Honest Accounting of What a 21-Month Sample Can Demonstrate}}
+\author{Prakrit Dayal\thanks{Master of AI, Monash University. Portfolio project. Email: \texttt{prakritdayal@gmail.com}}}
+\date{May 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We predict whether daily realised volatility on SPDR S\&P 500 ETF Trust (SPY) will exceed its trailing 21-day mean using a feature panel of (i) VIX term structure derivatives and (ii) dealer gamma exposure (GEX) computed from Option Price Reporting Authority (OPRA) options open interest. Six model architectures spanning classical, tree, and neural classes are pre-registered and trained walk-forward over 2024-08 through 2026-04. We document an out-of-sample area-under-curve of 0.61--0.67 across all models, statistically distinguishable from 0.50 but with 95\% block-bootstrap Sharpe confidence intervals that straddle zero. We trace the apparent dichotomy --- signal detectable, strategy unprofitable --- to the structural negative drift of the trading vehicle (VXX). Our 21-month sample is structurally too short to demonstrate orthogonal predictive value of GEX above the VIX channel, given an empirical correlation of $-0.68$ between $\text{gex}_{\text{net}}$ and the 20-day VIX z-score in this window. We provide the full pre-registration protocol, autocorrelation-adjusted standard errors, and a Probabilistic Sharpe Ratio analysis. The work is positioned as a methodological contribution to honest reporting of finite-sample backtest results in equity volatility prediction.
+\end{abstract}
+
+\section{Introduction}
+
+Forecasting realised volatility is among the most studied problems in empirical finance. The literature is dominated by the heterogeneous autoregressive (HAR) model of \cite{corsi2009har} for the magnitude task, and by variance-risk-premium-based approaches for direction and regime detection \cite{bollerslev2008}. Recent work in microstructure --- particularly \cite{barbon2021dealer} --- argues that dealer gamma exposure (GEX) computed from options open interest carries economically meaningful information about forward volatility, driven by the gamma-hedging channel of options market makers.
+
+This paper does \emph{not} aim to discover a new predictor. It aims to:
+\begin{enumerate}
+    \item Construct a clean, lookahead-safe daily feature panel combining VIX-family features and GEX over 2024-08 to 2026-04.
+    \item Train six pre-registered model architectures walk-forward and report results with confidence intervals that respect the autocorrelation structure of the data.
+    \item Honestly characterise what a 21-month sample can demonstrate and what it cannot.
+\end{enumerate}
+
+The third point is the methodological contribution. A common failure mode in backtested-strategy reporting is treating large nominal sample sizes ($N \approx 800$) as if they were independent observations. With daily VIX-family features exhibiting first-order autocorrelation of $\rho_1 = 0.92$, the effective sample size for inference is closer to $N_{\text{eff}} \approx 40$--$500$ depending on which quantity is being inferred. Confidence intervals scale accordingly, and many claims that ``look significant'' become marginal under the correct estimator.
+
+\section{Data}
+
+\subsection{Sources}
+
+\begin{itemize}
+    \item \textbf{Databento OPRA.PILLAR statistics} for SPY options: end-of-day open interest and close prices per contract.
+    \item \textbf{Databento OPRA.PILLAR definitions}: strike, expiry, contract type per instrument.
+    \item \textbf{Yahoo Finance}: daily OHLCV for SPY, VXX, and the VIX family (VIX, VIX9D, VIX3M, VVIX).
+    \item \textbf{Federal Reserve Economic Data (FRED)}: 3-month T-bill yield (DGS3MO) as the risk-free rate input to Black-Scholes IV inversion.
+\end{itemize}
+
+\subsection{OPRA cost engineering}
+
+A naive pull of the full SPY options statistics over the target window was quoted at USD 336. The actual pull (USD 94.74) was achieved via a two-stage filtered architecture: cheap-schema definitions first, then statistics filtered to the standard 3rd-Friday monthly expirations of contracts within $\pm 20\%$ moneyness and DTE $\in [7, 60]$. The reduction is roughly $\sim 80\%$ in contract count, exploiting the empirical concentration of dealer open interest in standard monthlies.
+
+\subsection{Target}
+
+The binary target is constructed from a Yang-Zhang OHLC volatility estimator \cite{yangzhang2000}:
+\begin{equation}
+    RV_t^2 = \left(\ln \frac{O_t}{C_{t-1}}\right)^2 + \tfrac{1}{2}\left(\ln \frac{H_t}{L_t}\right)^2 - (2 \ln 2 - 1)\left(\ln \frac{C_t}{O_t}\right)^2,
+\end{equation}
+combining the overnight close-to-open variance with the Garman-Klass intraday variance \cite{garmanklass1980}. The binary regime label is
+\begin{equation}
+    y_t = \mathbb{1}\!\left[RV_{t+1} > \overline{RV}_{[t-20, t]}\right],
+    \label{eq:target}
+\end{equation}
+where $\overline{RV}_{[t-20, t]}$ is the trailing 21-day arithmetic mean of $RV$. The base rate of $y_t = 1$ in our panel is 38--41\% (skewed below 50\% because $RV$ is right-skewed, so the median next-day $RV$ sits below the rolling \emph{mean}).
+
+A structural caveat: the rolling-mean denominator in Equation~\ref{eq:target} includes $RV_t$ itself, which is correlated with $RV_{t+1}$ via volatility clustering ($\rho_1(RV) = 0.57$ in our panel). This inflates apparent area-under-curve by an amount independent of any real edge.
+
+\section{Methodology}
+
+\subsection{Feature panel}
+
+All features are computed at the close of day $t$ then lagged by one trading day before joining to the target, so the feature at row $t$ reflects information available at the close of $t-1$. The no-lookahead invariant is enforced by automated test (\verb|test_no_lookahead.py::test_target_no_future_leak|) which perturbs $RV$ strictly in the future of any given row and asserts that the row's label is unchanged.
+
+\paragraph{VIX family (eight features).} Standard transformations of close prices on VIX, VIX9D, VIX3M, VVIX: level, log-level, 1- and 5-day changes, 20-day z-score, $\text{VIX9D}/\text{VIX}$ ratio (front-curve), $\text{VIX}/\text{VIX3M}$ ratio (longer-curve), and $\text{VVIX}/\text{VIX}$. The features are heavily collinear: the participation ratio of their correlation matrix eigenvalues is $\approx 3$.
+
+\paragraph{GEX (four features).} For each contract on each day we (i) numerically invert the Black-Scholes price to recover implied volatility $\sigma_i$, (ii) compute the BS gamma $\Gamma_i$ at the fitted $\sigma_i$, (iii) filter to $|\delta| \in [0.05, 0.95]$ and DTE $\in [7, 60]$, and (iv) aggregate using the practitioner convention ``dealers long calls, short puts'':
+\begin{equation}
+    \text{GEX}_{\text{net}, t} = \sum_{i \in \text{calls}} \Gamma_i \cdot OI_i \cdot S_t^2 \cdot M \cdot 0.01 \,-\, \sum_{i \in \text{puts}} \Gamma_i \cdot OI_i \cdot S_t^2 \cdot M \cdot 0.01,
+\end{equation}
+where $M = 100$ is the contract multiplier and the $\cdot 0.01$ converts to dollar-per-1\%-spot-move units. We also retain $\text{gex}_{\text{calls}}$, $\text{gex}_{\text{puts}}$, and the count of surviving contracts as separate features.
+
+\textbf{Critical observation}: $\text{corr}(\text{gex}_{\text{net}}, \text{vix}_{\text{zscore}}) = -0.68$ in our 21-month sample. GEX shares roughly 46\% of its variance with VIX in this window. The literature evidence for orthogonal GEX edge is from 7+ year samples; ours is structurally too short to replicate that finding.
+
+\subsection{Six pre-registered model architectures}
+
+All conform to a single classifier interface (\verb|fit|, \verb|predict_proba|). Hyperparameters are locked in \verb|configs/experiment.yaml| \emph{before} any cross-validation result is observed.
+
+\begin{enumerate}
+    \item \textbf{Logistic (VIX only).} L2-regularised logistic regression on the 8 VIX features. The strict baseline.
+    \item \textbf{Logistic with pre-registered interactions.} Adds four hand-crafted interactions: $\text{vix}_z \times \text{gex}_{\text{net}}$, $\text{term}_{9d/30d} \times \text{vix}_{\Delta 5d}$, $\text{vix}_z^2$, and $\text{gex}_{\text{net}} \times \text{vix}_{\Delta 1d}$. Chosen from theory before any CV result.
+    \item \textbf{HAR-X.} \cite{corsi2009har} HAR-RV regression on $\log(RV_t)$, $\log(\overline{RV}_{5d})$, $\log(\overline{RV}_{21d})$, plus VIX/GEX exogenous variables; wrapped to binary output via $P(y=1) = \sigma\!\left((\log \hat{RV}_{t+1} - \log \overline{RV}_{21d}) / \hat\sigma_{\text{resid}}\right)$ where $\hat\sigma_{\text{resid}}$ is the standard deviation of in-fold training residuals.
+    \item \textbf{XGBoost with isotonic calibration.} Tree ensemble with \verb|max_depth=4|, \verb|n_estimators=200|, \verb|learning_rate=0.05|. Calibration on a time-ordered final 20\% slice of each training fold.
+    \item \textbf{Small MLP.} Two hidden layers of 16 units each, dropout via L2 weight decay $\alpha = 10^{-3}$, early stopping on a 15\% time-ordered validation tail. $\sim$500 parameters total --- inside the VC-bound for $N_{\text{eff}} \approx 300$.
+    \item \textbf{Gaussian process classifier.} RBF kernel with Laplace approximation. Conceptually a Bayesian last layer over an infinite RBF feature map; the deliverable is the calibrated posterior for downstream uncertainty-aware sizing.
+\end{enumerate}
+
+\subsection{Walk-forward protocol}
+
+K-fold cross-validation shuffles time-series and violates no-lookahead; we use expanding-window walk-forward instead:
+\begin{itemize}
+    \item Initial training window: 12 months.
+    \item Refit cadence: monthly.
+    \item Each fold trains on $[\text{panel start}, t)$ and predicts on $[t, t + 1 \text{ month}]$; predictions are concatenated.
+\end{itemize}
+
+\section{Results}
+
+\subsection{Headline metrics}
+
+Table~\ref{tab:headline} summarises the out-of-sample performance of all six models, plus VXX buy-and-hold and cash benchmarks.
+
+\begin{table}[h]
+\centering
+\caption{Out-of-sample metrics over 2024-08 to 2026-04, with 95\% block-bootstrap Sharpe confidence intervals (block size $\approx N^{1/3}$).}
+\label{tab:headline}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+Model & AUC & $N$ & Sharpe & SR-lo & SR-hi & PSR & MaxDD \\
+\midrule
+logistic\_vix\_only       & 0.671 & 560 & $-0.71$ & $-1.98$ & $+0.34$ & 0.14 & $-45.5\%$ \\
+logistic\_interactions    & 0.637 & 185 & $-1.25$ & $-2.71$ & $+0.18$ & 0.12 & $-9.0\%$ \\
+har\_x                    & 0.650 & 185 & $-1.65$ & $-3.46$ & $-0.14$ & 0.08 & $-14.0\%$ \\
+xgb\_full                 & 0.617 & 185 & $-0.42$ & $-2.58$ & $+1.72$ & 0.36 & $-14.2\%$ \\
+mlp\_small                & 0.607 & 185 & $-0.96$ & $-2.76$ & $+0.78$ & 0.20 & $-8.8\%$ \\
+bayesian\_head            & 0.643 & 185 & $-0.93$ & $-2.54$ & $+0.66$ & 0.20 & $-9.1\%$ \\
+\midrule
+BENCH\_vxx\_bah           & ---    & 560 & $-0.08$ & $-1.28$ & $+1.06$ & 0.45 & $-70.5\%$ \\
+BENCH\_cash               & ---    & 560 & 0      & 0      & 0      & ---    & 0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three observations:
+\begin{enumerate}
+    \item All six models cluster between AUC 0.61 and 0.67. The block-bootstrap CIs all overlap each other, so individual model differences are below the detection floor at this $N$. Jointly, however, all six exceed 0.50 by enough to survive Bonferroni correction with $\alpha / 6$.
+    \item Every model has a negative point Sharpe. The 95\% block-bootstrap CIs straddle zero in 5 of 6 cases; \verb|har_x| is marginally below.
+    \item The Probabilistic Sharpe Ratio \cite{baileylopezdeprado2014}, accounting for skew/kurtosis bias, sits between 0.08 and 0.36 for all models --- well below the 0.95 threshold for statistical significance of $\hat{SR} > 0$.
+\end{enumerate}
+
+\subsection{Figures}
+
+Figure~\ref{fig:equity} shows the equity curves of all six models alongside the VXX buy-and-hold benchmark. The classifier-driven models all \emph{avoid} most of the VXX decay, but none generates net positive return. Figure~\ref{fig:auc} shows AUC bars with block-bootstrap CIs.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../report/_build/equity_curves.png}
+\caption{Out-of-sample equity curves. All six classifier-driven models substantially outperform VXX buy-and-hold, but none achieve net positive return.}
+\label{fig:equity}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../report/_build/auc_bars.png}
+\caption{AUC per model with 95\% block-bootstrap CIs. Individual model differences are below the detection floor; jointly all six are above 0.50.}
+\label{fig:auc}
+\end{figure}
+
+\section{Discussion}
+
+\subsection{Why the classifier works but the strategy doesn't}
+
+Every model has out-of-sample AUC above the random baseline. The strategy nevertheless loses money because the chosen execution vehicle, VXX, decays through VIX-futures contango at roughly 30--50\% annualised. Over the 21-month sample, buy-and-hold VXX returned $-52.8\%$. The classifier correctly keeps the strategy flat 60--80\% of the time; on the 20--40\% of days it is long, the partial-day gains do not overcome the daily bleed.
+
+The structural margin required is approximately $\hat{SR} \ge 0.70$ AUC under optimal sizing on this vehicle, or $\sim 0.65$ AUC under leveraged sizing concentrated on extreme-confidence days. Our models reach $\sim 0.62$ AUC, short of the break-even threshold for long-only VXX. The fix is in the execution arm, not the classifier: a short-VXX leg on the inverse signal would directly harvest the contango decay; a direct VIX futures position with explicit roll P\&L would bypass the ETN decay layer.
+
+\subsection{Why GEX-marginal-to-VIX is not testable here}
+
+In our sample, $\text{gex}_{\text{net}}$ and $\text{vix}_{\text{zscore}}$ are correlated at $r = -0.68$. The variance-inflation factor for adding $\text{gex}_{\text{net}}$ to a regression already containing $\text{vix}_{\text{zscore}}$ is $\frac{1}{1 - r^2} \approx 1.9$, modest but meaningful. With $N_{\text{eff}} \approx 300$ on the GEX subset, the marginal-GEX-coefficient standard error is wide enough that a true effect smaller than 0.04 AUC is below the detection floor. The literature evidence \cite{barbon2021dealer} comes from 7+ years of data; replicating that requires data we did not have access to.
+
+\subsection{What 21 months can and cannot prove}
+
+\textbf{Provable here:} VIX-family features carry signal for next-day RV regime (AUC $> 0.60$ with block-bootstrap CIs that exclude 0.50). The full pipeline is correctly implemented and lookahead-safe.
+
+\textbf{Not provable here:} (i) that GEX adds orthogonal information beyond VIX in this 21-month window, (ii) that the strategy is profitable in expectation, (iii) that one model is reliably better than another.
+
+\subsection{Future direction}
+
+The single biggest improvement is a longer time series. The OptionMetrics IvyDB US database via the Wharton Research Data Services (WRDS) academic licence covers SPY options from 1996, with precomputed greeks and open interest. Replicating this pipeline on a 25-year window would (i) shrink the AUC CI from $\pm 0.05$ to $\pm 0.02$, (ii) span multiple volatility regimes including the 2008 and 2020 stress windows, and (iii) enable meaningful tests of GEX-marginal-to-VIX. Strategy-side, replacing the long-only VXX execution with a long-flat-short structure on a leveraged volatility ETF pair would likely flip the P\&L sign.
+
+\section{Reproducibility}
+
+Source, data manifest, configuration, and all 48 unit tests are available at the project repository. The headline numbers in Table~\ref{tab:headline} are produced by \verb|make backtest| against a feature panel built via \verb|make features| from the cached raw data. The lookahead invariant is enforced by \verb|tests/test_no_lookahead.py|.
+
+\begin{thebibliography}{99}
+\bibitem{baileylopezdeprado2014}
+Bailey, D.~H., and López de Prado, M. (2014). The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality. \emph{Journal of Portfolio Management}, 40(5), 94--107.
+
+\bibitem{barbon2021dealer}
+Barbon, A., Beckmeyer, H., Buraschi, A., and Moerke, M. (2021). The Role of Dealer Gamma in Equity Markets. Working paper, SSRN.
+
+\bibitem{bollerslev2008}
+Bollerslev, T., Tauchen, G., and Zhou, H. (2008). Expected Stock Returns and Variance Risk Premia. \emph{Review of Financial Studies}, 22(11), 4463--4492.
+
+\bibitem{corsi2009har}
+Corsi, F. (2009). A Simple Approximate Long-Memory Model of Realized Volatility. \emph{Journal of Financial Econometrics}, 7(2), 174--196.
+
+\bibitem{garmanklass1980}
+Garman, M.~B., and Klass, M.~J. (1980). On the Estimation of Security Price Volatilities from Historical Data. \emph{Journal of Business}, 53(1), 67--78.
+
+\bibitem{yangzhang2000}
+Yang, D., and Zhang, Q. (2000). Drift-Independent Volatility Estimation Based on High, Low, Open, and Close Prices. \emph{Journal of Business}, 73(3), 477--491.
+\end{thebibliography}
+
+\end{document}

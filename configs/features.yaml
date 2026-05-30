@@ -1,0 +1,20 @@
+target:
+  rv_window_minutes: 5         # bar size for realised vol computation
+  rolling_window_days: 21      # trailing mean to compare against
+  trading_minutes_per_day: 390
+  forward_horizon_days: 21     # average RV over the next h days vs trailing mean
+
+gex:
+  delta_filter: [0.05, 0.95]
+  dte_filter: [7, 60]    # monthly-expiry-only filter (build_id_list) caps cost
+  multiplier: 100
+
+microstructure:
+  session_cutoff_et: "15:55:00"
+  obi_windows_minutes: [5, 60]
+
+vix:
+  zscore_window_days: 20
+
+output:
+  path: data/processed/features_panel.parquet

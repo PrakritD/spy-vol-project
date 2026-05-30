@@ -1,0 +1,49 @@
+# Databento batch-pull manifest.
+# Two-stage pull strategy:
+#   Stage 1 (steps 1, 3): cheap, deterministic. Pull definition + ARCX.PILLAR mbp-1.
+#   Stage 2 (step 2):     filtered. Build per-day SPY ATM-band id list from
+#                          definition data, then pull statistics against just
+#                          those instrument_ids in quarterly batches.
+#
+# Run `make quote` to dry-run; `make data` to execute (gated behind --confirm).
+# Stage 2 pulls are not in this YAML — they're emitted programmatically by
+# ingest/databento_pull.py reading from data/interim/spy_atm_id_list.parquet.
+
+start: "2024-08-01"  # monthly-only pull lands ~$95, inside free Databento credit
+end: "2026-05-01"    # exclusive — captures data through 2026-04-30 inclusive
+
+pulls:
+  # --- Stage 1 ----------------------------------------------------------------
+  - name: opra_definition
+    dataset: OPRA.PILLAR
+    schema: definition
+    symbols: ["SPY.OPT"]
+    stype_in: parent
+    description: "All SPY contract definitions (strike, expiry, type, multiplier). Cheap because definition is small per contract; needed to build the ATM-band id list."
+    expected_cost_usd: 8
+
+  # tbbo = trade + BBO snapshot at trade time. Gives us everything we need
+  # (Lee-Ready signing, signed volume, microprice from last bbo of session)
+  # but only emits on trades — not on every quote update like mbp-1.
+  # mbp-1 quoted at $288 for SPY 2023→2026 (~10× tbbo). Don't use.
+  - name: arcx_spy_tbbo
+    dataset: ARCX.PILLAR
+    schema: tbbo
+    symbols: ["SPY"]
+    stype_in: raw_symbol
+    description: "NYSE Arca trade events + BBO at trade time for SPY. Replaces mbp-1 to control cost."
+    expected_cost_usd: 30
+    enabled: false   # toggle on after stage-2 quote confirms remaining budget
+
+  # --- Stage 2 (programmatic, listed here for documentation only) -------------
+  # Emitted by `ingest/databento_pull.py --confirm-stage2` after id list is built.
+  # opra_statistics_filtered_<quarter>:
+  #   dataset:   OPRA.PILLAR
+  #   schema:    statistics
+  #   symbols:   <quarterly id list from data/interim/spy_atm_id_list.parquet>
+  #   stype_in:  instrument_id
+  #   universe:  band=±20%, dte=[7,60], 2024-08→2026-05, monthly expiries only
+  #   total est: ~$95 (quoted) — fits inside the free Databento credit
+
+budget_usd: 100
+reserve_usd: 14

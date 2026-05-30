@@ -1,0 +1,30 @@
+data/raw/
+data/interim/
+data/processed/
+*.parquet
+*.csv
+!data/.gitkeep
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+.env
+.envrc
+secrets/
+
+report/_build/
+report/*.pdf
+
+.DS_Store
+.idea/
+.vscode/
+
+# nested old published git mirror (superseded by this repo's history)
+repo/
+*.egg-info/
+
+# NOTE: analysis/figures/*.png ARE committed (deliverable figures referenced by FINDINGS.md)
