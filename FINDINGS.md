@@ -87,6 +87,8 @@ The increment is **gamma-specific** (DIX adds nothing), **survives a richer VIX 
 
 **What this does not claim.** Whether a sub-1%-CRPS / 0.7-AUC-point edge is *tradeable* after costs is a separate question, deferred to a future strategy phase. The result rides on SqueezeMetrics' proprietary gamma model; an independent reconstruction (and the intraday/0DTE timescale, where the mechanism is strongest) are the natural next tests.
 
+**Growth probe — the daily edge is *linear*, so the next gain is intraday, not a fancier model.** A first growth check (`analysis/phase2_learned_flip.py`) finds the daily gamma→RV relationship is a smooth, near-linear gradient in gamma percentile — *not* a sharp threshold at the flip. A regime-switching / learned-flip model does **not** beat the plain linear gamma term (DM p=0.35). So on daily data the edge is the small linear sliver, and a nonlinear "AI-on-the-mechanism" model would add complexity without payoff. The nonlinear/threshold structure (and any larger, tradeable signal) would have to live at the **intraday** scale — making intraday the highest-value next test.
+
 ## 7. Reproducibility
 
 ```bash
