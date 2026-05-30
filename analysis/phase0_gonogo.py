@@ -1,4 +1,4 @@
-"""Phase 0 go/no-go (spec 2026-05-29 §11).
+"""Phase 0 go/no-go: the pre-registered kill-switch on data already on disk.
 
 Question: does dealer gamma carry next-day RV-regime information INCREMENTAL to a
 HAR-X + VIX model, on the 21-month signed-gamma window already on disk?
@@ -10,13 +10,13 @@ Method (no new data):
 - Nested models, expanding walk-forward, Gaussian predictive density:
     M0  HAR-X + VIX            (the bar)
     M1  + gamma LEVEL
-    M2  + gamma SIGN bucket    (the "2-state signed-GEX bucket" the spec names)
+    M2  + gamma SIGN bucket    (the pre-registered 2-state signed-GEX bucket)
     M3  + sign-interacted HAR  (regime-switching dynamics)
 - Headline metric: Diebold-Mariano test on the CRPS differential (M0 - Mk),
   Newey-West HAC + Harvey small-sample correction. Positive & significant => gamma helps.
 - Secondary: OOS RMSE, binary AUC, regime-conditional RV, gamma VIF.
 
-Honest caveat baked into the verdict: N~265 OOS, one calm regime, mostly short-gamma.
+Caveat baked into the verdict: N~265 OOS, one calm regime, mostly short-gamma.
 A positive is encouraging; a strong null is a caution, not proof of absence.
 """
 from __future__ import annotations

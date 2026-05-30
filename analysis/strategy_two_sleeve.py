@@ -1,18 +1,17 @@
 """Two-sleeve daily strategy: risk-managed VRP carry + SPY tactical timing.
 
-HONEST FRAMING (anti-v1). The variance risk premium (VIX persistently > realized) is the
-real, persistent edge. The vehicle is SHORT VIXY (ProShares VIX short-term futures ETF,
-2011-> , no splice, *includes* the Feb-2018 / Mar-2020 / Aug-2015 blowups -> an honest tail).
-Naive always-short VIXY has a great calm-period Sharpe and a catastrophic drawdown. The
-overlay's JOB is to manage that tail: reduce/flatten the short when the term structure
-inverts, gamma goes negative, or vol-of-vol spikes. We therefore judge the overlay by
-TAIL-adjusted metrics (Calmar, maxDD, Sortino) vs the *naive vol-targeted short* — the gate
-must earn its keep there, not on raw Sharpe. Sleeve 2 (SPY long/flat/short from DIX flow +
-gamma + trend) is a diversifier; it is reported standalone and honestly, including if it is
-weak. Every signal is pre-registered and strictly lagged (<= t-1); gex is lagged for OCC's
-T-1 open interest. Trades are sized from prior-close signals; P&L is close-to-close (no
-reliable free intraday). Headline numbers sit next to the naive-carry benchmark, the
-Deflated Sharpe over all variants tried, maxDD, and the blowups IN-SAMPLE.
+The variance risk premium (VIX persistently > realized) is the edge. The vehicle is SHORT
+VIXY (ProShares VIX short-term futures ETF, 2011-> , no splice, *includes* the Feb-2018 /
+Mar-2020 / Aug-2015 blowups, so the tail is in-sample). Naive always-short VIXY has a great
+calm-period Sharpe and a catastrophic drawdown. The overlay's JOB is to manage that tail:
+reduce/flatten the short when the term structure inverts, gamma goes negative, or vol-of-vol
+spikes. The overlay is therefore judged by TAIL-adjusted metrics (Calmar, maxDD, Sortino) vs
+the *naive vol-targeted short*; the gate must earn its keep there, not on raw Sharpe. Sleeve 2
+(SPY long/flat/short from DIX flow + gamma + trend) is a diversifier, reported standalone
+including when it is weak. Every signal is pre-registered and strictly lagged (<= t-1); gex is
+lagged for OCC's T-1 open interest. Trades are sized from prior-close signals; P&L is
+close-to-close (no reliable free intraday). Headline numbers sit next to the naive-carry
+benchmark, the Deflated Sharpe over all variants tried, maxDD, and the blowups IN-SAMPLE.
 
 Run:  python analysis/strategy_two_sleeve.py
 """
@@ -359,8 +358,8 @@ def sharpe_minus_topk(r: np.ndarray, k: int) -> float:
 
 
 def hac_tstat(r: np.ndarray) -> float:
-    """Newey-West HAC t-stat that the mean daily (excess) return > 0 — the honest significance
-    test for an annualized Sharpe, accounting for autocorrelation."""
+    """Newey-West HAC t-stat that the mean daily (excess) return > 0: the significance test
+    for an annualized Sharpe that accounts for autocorrelation."""
     r = np.asarray(r, float); r = r[~np.isnan(r)]; n = len(r)
     if n < 10 or r.std() == 0:
         return np.nan
@@ -414,7 +413,7 @@ def main():
           f"%neg-gamma={(d['gex_neg']==1).mean()*100:.1f}\n")
 
     # =========================== CARRY CONSTRUCTION LADDER ===========================
-    # The honest narrative: which control actually tames the short-vol tail?
+    # Attribution: which control actually tames the short-vol tail?
     pos_const = carry_constant(d)
     pos_vt = carry_positions(d, addons=frozenset({"voltarget"}), filt=np.ones(len(d)))  # vol-tgt, no filter
     pos_carry = carry_positions(d)                                  # PRIMARY: contango filter only
@@ -438,7 +437,7 @@ def main():
 
     # =========================== BENCHMARKS ===========================
     # Both the strategy and 'SPY (excess)' are excess-of-rf (apples-to-apples). We ALSO show SPY
-    # total-return — the way investors actually quote 'buy-hold SPY' — so the comparison is honest.
+    # total-return (the way investors actually quote 'buy-hold SPY'), so the comparison is apples-to-apples.
     bh_spy = sleeve_excess(np.ones(len(d)), sret, rf, 0.0, 0.0)   # excess of rf
     sixty40 = 0.6 * (sret - rf)
     avg_rf = np.nanmean(rf) * ANN
@@ -480,7 +479,7 @@ def main():
     print("  An add-on EARNS its place only if it improves risk-adjusted return (Δ>0). "
           "Gamma ≈ null — consistent with FINDINGS (gamma is ~95% a VIX echo).")
 
-    # =========================== SLEEVE 2: TIMING (honest null) ===========================
+    # =========================== SLEEVE 2: TIMING (a null) ===========================
     from sklearn.metrics import roc_auc_score
     pos_tim, p_hat = timing_positions(d)
     r_tim = sleeve_excess(pos_tim, sret, rf, cost.spy_bps, 0.0)
@@ -490,7 +489,7 @@ def main():
     print("\n--- SLEEVE 2: SPY TACTICAL TIMING (DIX flow + gamma + trend) ---")
     print(f"  OOS direction AUC = {auc:.3f} (0.50 = no skill) | active {np.mean(pos_tim!=0)*100:.0f}% of days, "
           f"long {np.mean(pos_tim>0)*100:.0f}% / short {np.mean(pos_tim<0)*100:.0f}%")
-    print(f"  -> HONEST NULL: DIX/gamma/flow/trend do not predict next-day SPY direction; the fit collapses "
+    print(f"  -> NULL: DIX/gamma/flow/trend do not predict next-day SPY direction; the fit collapses "
           f"to closet-long (corr to SPY {np.corrcoef(r_tim, sret-rf)[0,1]:+.2f}). Sleeve 2 adds no timing edge.")
 
     # =========================== CORRELATION REALITY ===========================
@@ -525,14 +524,14 @@ def main():
     cross = bgrid[np.argmin(np.abs(shg - spx_sh))]
     print(f"  VIX-conditioned borrow (base5%+stress, avg {np.mean(vixb[pos_carry<0])*100:.0f}% on short): "
           f"Sharpe {m_vb['sharpe']:+.2f}, Calmar {m_vb['calmar']:+.2f}, maxDD {m_vb['maxdd']*100:+.0f}%")
-    print(f"  HONEST: Sharpe-parity-with-SPY ({spx_sh:+.2f}) breaks at borrow ≈ {cross*100:.1f}%/yr; "
+    print(f"  Sharpe-parity-with-SPY ({spx_sh:+.2f}) breaks at borrow ≈ {cross*100:.1f}%/yr; "
           f"BUT Calmar/maxDD beat SPY out to ~20%/yr. The drawdown edge is borrow-robust; the Sharpe 'beat' is not.")
 
-    # =========================== ROBUSTNESS: DSR (honest range) / bootstrap / fragility ===========================
+    # =========================== ROBUSTNESS: DSR (range) / bootstrap / fragility ===========================
     # The DSR haircut depends on the DISPERSION of Sharpes across strategies CONSIDERED. Estimating it
     # from our own near-identical short-VIXY variants understates it (they are ~0.87 correlated clones).
     # We report a RANGE: (a) empirical std over a DIVERSE trial set, and (b) the theory-grounded B&LdP
-    # H0 per-trial std sqrt((1+SR^2/2)/T). The honest DSR is materially below an all-clones estimate.
+    # H0 per-trial std sqrt((1+SR^2/2)/T). The DSR range is materially below an all-clones estimate.
     filt_defs = {  # distinct filter DEFINITIONS compared when selecting VIX<VIX3M (headline excluded — it IS r_carry)
         "VIX<VIX3M & VIX9D<VIX": ((d["t_30_90"] < 1) & (d["t_9_30"] < 1)).to_numpy().astype(float),
         "VIX9D<VIX": (d["t_9_30"] < 1).to_numpy().astype(float),

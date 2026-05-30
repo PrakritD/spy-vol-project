@@ -1,16 +1,15 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
 ## Project
 
-SPY next-day realised-volatility regime classifier + VXX long-flat trading strategy. Binary target: `RV_{t+1} > trailing 21-day mean RV`. Signals are GEX (dealer gamma exposure from OPRA options) and lagged VIX-family term structure. The microstructure feature group (OBI, signed flow from intraday SPY tbbo) was designed but **not built** — ARCX SPY tbbo was never pulled because the project ran on the free $100 Databento credit which OPRA stage-2 consumed.
+A short-volatility **VRP-carry strategy** on SPY, plus the signal investigation behind one of its candidate inputs (dealer gamma versus realized volatility). Two deliverables:
 
-**Status (v2, 2026-05 — supersedes the v1 framing above).** The v1 "classifier → VXX strategy" was audited and its headline "+0.84 Sharpe" shown to be a single-day artifact (`docs/v1-retrospective.md`). The project was reframed to a **dealer-gamma vs realized-volatility signal investigation**. Current deliverable: **`FINDINGS.md`** — dealer gamma is ~95% a VIX echo (a clean null on the calm 21-month OPRA window across six pre-registered formulations) but carries a **small, robust, gamma-specific increment** on 15 years of free deep-history data (gamma-only Diebold-Mariano on CRPS p=0.001; not DIX; survives a richer VIX baseline). Evidence: `analysis/phase1_deep_history.py`, `analysis/phase1_robustness.py`, `analysis/phase0*.py`. Design + scope: `docs/specs/2026-05-29-gamma-regime-vol-design.md`. Analyses run in the `trading` conda env (`python`; pyarrow/scikit-learn/scipy; statsmodels absent — OLS/Newey-West/CRPS are hand-rolled). Free deep data is fetched, not committed (vendor ToS).
+- **`STRATEGY.md`** (the flagship): short VIXY only when `VIX < VIX3M` (term structure in contango), flat otherwise. 2011–2026, net of costs and borrow: Sharpe 0.74, Calmar 0.56, maxDD −15%, CAGR 8.5%. The durable edge is drawdown control (Calmar 0.56 vs SPY 0.38, −15% vs −34%); it does not beat SPY on Sharpe, and the construction ladder attributes the risk-adjusted gain to the contango filter. Code: `analysis/strategy_two_sleeve.py`; figures: `analysis/make_figure_strategy.py`.
+- **`FINDINGS.md`** (the signal study): dealer gamma is ~95% a VIX echo, a clean null on the calm 21-month OPRA window across six pre-registered formulations, but carries a small, robust, gamma-specific increment over a full VIX/HAR baseline on 15 years of free deep-history data (gamma-only Diebold-Mariano on CRPS p=0.001; not DIX; survives a richer VIX baseline). Economically marginal, which is why gamma adds nothing to the strategy once VIX is in the model. Code: `analysis/phase1_deep_history.py`, `analysis/phase1_robustness.py`, `analysis/phase0*.py`.
 
-**Second deliverable — `STRATEGY.md` (2026-05, audit-hardened).** A risk-managed short-vol **VRP carry** (`analysis/strategy_two_sleeve.py`): short VIXY only when `VIX<VIX3M` (contango). 2011–2026, net of costs+borrow: Sharpe 0.74, Calmar 0.56, maxDD −15%. Honest verdict (after a self-run multi-agent adversarial audit dismantled a first draft's over-claims): it does **not** beat SPY on Sharpe/Sortino; the durable edge is **drawdown control** (Calmar 0.56 vs 0.38). DSR is a **range 0.66–0.81** (not the clone-inflated 0.98 a draft reported); gamma/DIX/timing all null. Figures: `analysis/make_figure_strategy.py`; cited extension roadmap: `docs/strategy-extensions-research.md`; walkthrough: `notebooks/strategy_walkthrough.ipynb`.
-
-**Repo layout (v2).** The live tree is `analysis/` (v2 deliverables), `features/`+`ingest/`+`configs/` (feature-eng + Databento ingest, retained for the 21-month OPRA sub-study), `tests/` (data-free v2 tests), `notebooks/`. **The v1 strategy pipeline is quarantined under `legacy/`** (`models/ backtest/ report/ live/ paper/` + v1 tests + `STATISTICAL_RIGOR.md`); see `legacy/README.md`. The v2 core has zero `features/` dependency — the Yang-Zhang RV helper was vendored to `analysis/rvutil.py`.
+Analyses run in the `trading` conda env (`python`; pyarrow/scikit-learn/scipy; statsmodels is absent, so OLS/Newey-West/CRPS are hand-rolled). Free deep data is fetched, not committed (vendor ToS). An earlier version of the project (a volatility-regime classifier feeding a VXX long-flat strategy) was retired; see "v1 lessons" below.
 
 ## Commands
 
@@ -25,9 +24,9 @@ make notebook                # execute notebooks/strategy_walkthrough.ipynb in p
 make all                     # findings + strategy + figures + notebook + test
 ```
 
-The v2 gate is `tests/test_strategy.py::test_no_lookahead_end_to_end` (perturbs raw inputs strictly
-in the future, asserts earlier positions & cumulative P&L are byte-identical). Use the trading env
-python directly for ad-hoc runs: `python analysis/strategy_two_sleeve.py`.
+The gate is `tests/test_strategy.py::test_no_lookahead_end_to_end` (perturbs raw inputs strictly
+in the future, asserts earlier positions and cumulative P&L are byte-identical). Do not relax it.
+Use the trading env python directly for ad-hoc runs: `python analysis/strategy_two_sleeve.py`.
 
 Databento ingest is gated to prevent accidental spend:
 
@@ -37,67 +36,92 @@ make sample                  # 5-day sample pull (small charge). Verify quote fi
 make data                    # full pull (real charge). Verify quote first.
 ```
 
-`make data` only runs stage 1 (OPRA definitions; the `arcx_spy_tbbo` entry in the YAML is `enabled: false` because intraday wasn't pulled). Stage 2 (filtered OPRA statistics) is a separate two-step flow — see Data ingest below.
+`make data` only runs stage 1 (OPRA definitions; the `arcx_spy_tbbo` entry in the YAML is
+`enabled: false` because intraday was never pulled). Stage 2 (filtered OPRA statistics) is a
+separate two-step flow; see Data ingest below.
 
-## Data ingest: two-stage Databento pull
+## Architecture (v2)
 
-Naive `OPRA.PILLAR.statistics SPY.OPT parent` is far too expensive. The pipeline filters the contract universe first, then pulls statistics against only the kept instrument_ids:
-
-1. **Stage 1** (`make data` / `databento_pull --confirm`): pull `OPRA.PILLAR/definition` for `SPY.OPT` (cheap; small per-contract rows) and `ARCX.PILLAR/tbbo` for SPY equity. tbbo = trade + BBO snapshot at trade time, chosen instead of mbp-1 (~10× cheaper for SPY 2023→2026).
-2. **Build id list** (`python -m ingest.build_id_list configs/databento_pulls.yaml`): join definitions against daily SPY spot, filter to live contracts within ±20% moneyness band, DTE ∈ [7, 60], **monthly expiries only** (3rd Friday — dealer OI concentrates here, and the filter cuts ~80% of contract count to fit the free credit). Per-month id-list chunks land in `data/interim/id_list_chunks/*.json`.
-3. **Stage 2** (`python -m ingest.databento_pull --quote-stage2` then `--confirm-stage2`): submit one filtered-statistics job per (month, chunk) using `stype_in=instrument_id`. Total ~$94.74 for 2024-08 → 2026-04.
-
-`data/raw/manifest.json` records every batch job (job_id, sha256, dates, sample-vs-full). Resume an in-flight job without re-charging via `python -m ingest.databento_pull --resume <JOB_ID> --name <hint> configs/databento_pulls.yaml`.
-
-Free data (`yfinance` VIX/VIX9D/VIX3M/VVIX/SPY/VXX and FRED `DGS3MO`) lands under `data/raw/yfinance/` and `data/raw/fred/` via separate pull scripts, driven by `configs/free_pulls.yaml`.
-
-## Architecture (v1 — now under `legacy/`)
-
-> The DAG below describes the **quarantined v1 pipeline** (`models/ backtest/ report/ live/` now live in `legacy/`). It is retained for the retrospective; its conclusions are superseded by `FINDINGS.md` / `STRATEGY.md`. The live v2 work is the self-contained scripts in `analysis/`. `ingest/` and `features/` remain at top level (feature-eng + data provenance for the 21-month OPRA sub-study).
-
-The pipeline is a linear DAG of CLI entry points, each reading YAML config and writing parquet under `data/`. Every stage is invokable in isolation:
+The live work is the self-contained scripts in `analysis/`, each runnable in isolation:
 
 ```
-ingest/        Databento batch jobs + free-data pulls   →  data/raw/
-ingest/build_id_list.py                                 →  data/interim/id_list_chunks/
-features/      gex.py, rv_target.py, vix_termstructure.py — each emits a
-               daily panel; features/opra_panel.py reads DBN and produces
-               the contract-day panel; features/assemble.py joins them   →  data/processed/features_panel.parquet
-models/        Six classes (logistic, logistic_interactions, har_x,
-               xgb_calibrated, mlp_small, bayesian_head). All conform to
-               the `Model` protocol in models/base.py (`fit`, `predict_proba`).
-               models/factory.make_model wires config strings → instances.
-               models/sequence_lstm.py exists but is NOT in the shipped pipeline.
-backtest/      walk_forward.py (model-agnostic, calls a `model_factory`),
-               execution.py (p_hat → VXX size → P&L, confidence sizing +
-               regime-conditional turnover costs), sizing.py (linear + Kelly),
-               metrics.py (Sharpe + block-bootstrap CI, PSR, Sortino, CAGR,
-               VaR/CVaR, …), runner.py (full orchestrator).
-report/        figures.py (matplotlib, 10 PNGs to report/_build/),
-               render.py (optional Quarto → PDF).
+analysis/strategy_two_sleeve.py   the STRATEGY backtest: signals -> contango-filtered carry
+                                  -> ladder/attribution/ablation -> robustness -> strategy_results.json
+analysis/phase1_deep_history.py   the FINDINGS deep-history DM-on-CRPS test, per regime block
+analysis/phase1_robustness.py     gamma-vs-DIX + richer-VIX confound decomposition
+analysis/phase0_gonogo.py         21-month OPRA sub-study (level claim)
+analysis/phase05_reframe.py       21-month sub-study (path/dynamics/tails/regime)
+analysis/phase05b_profile.py      21-month sub-study (by-strike profile shape)
+analysis/phase2_learned_flip.py   growth probe: daily gamma->RV is linear, not a threshold
+analysis/rvutil.py                vendored Yang-Zhang RV helper (so analysis/ has no features/ dep)
+analysis/make_figure*.py          figures; make_figure_deep.py has stats inline (no data needed),
+                                  make_figure_strategy.py reads strategy_equity.parquet + _results.json
 ```
 
-### Critical: no-lookahead invariants
+`features/`, `ingest/`, `configs/` are feature engineering and the Databento OPRA pull, retained
+because the 21-month options sub-study in `FINDINGS.md` (the signed by-strike gamma profile) uses
+them. The strategy and deep-history code do not import from them.
 
-The whole project is fiction if the target leaks. `tests/test_no_lookahead.py::test_target_no_future_leak` is the gate — it perturbs RV strictly in the future and asserts earlier labels are unchanged. Do not relax this test.
+### No-lookahead invariants
 
-Label alignment: `features/rv_target.py` produces a daily frame where `y_next` at row `t` reflects `RV_{t+1}` vs the rolling mean ending at `t`. A model sees features at `t` and predicts `y_next[t]`. The `features/assemble.py` joins apply `shift(1)` to any contemporaneous-day source (VIX close, GEX) so date-`t` rows contain only information available at the close of `t`.
-
-### Walk-forward harness
-
-`backtest/walk_forward.run` takes a `model_factory: Callable[[], Model]` and a feature column list. Per segment it trains on all data with `date < train_end` (or rolling window if `rolling_train_months` set) and predicts on `[seg_start, seg_end]`. Output is a long frame of `(date, y_true, p_hat, model_name)` — model-agnostic, so adding a new model means writing a class that conforms to `models/base.Model` and registering it under `configs/experiment.yaml` `models:`.
-
-### Execution and sizing
-
-`backtest/execution.backtest` is the only place that turns probabilities into P&L. Default sizing is linear-confidence (`size = clip(2*p_hat - 1, 0, 1)`); half-Kelly via `backtest.sizing.estimate_kelly_b(train_pnl)` is available per-fold. Costs are `|Δsize| × (base_bps + extra_bps × high_vol_indicator)` where the high-vol flag uses an out-of-sample VIX z-score, so cost scales with turnover rather than position presence. Approximation: P&L uses VXX close-to-close because intraday VXX is not yet pulled — switch to open-to-open when it lands.
+The project is fiction if the target leaks. Every predictor at `t` uses only information available
+by the close of `t`; same-day sources (VIX close, GEX) are `shift(1)`-ed, and gamma is lagged one
+trading day for OCC's T-1 open interest. The synthetic-panel gate test above enforces this by
+perturbing future inputs and asserting earlier positions and P&L are byte-identical.
 
 ### GEX dealer convention
 
-`features/gex.run` follows the practitioner simplification: dealers long calls, short puts. `gex_net = gex_calls - gex_puts`. Document this in any report; it is not a universal convention.
+`features/gex.run` follows the practitioner simplification: dealers long calls, short puts, so
+`gex_net = gex_calls - gex_puts`. State this in any report; it is not a universal convention.
+
+## Data ingest: two-stage Databento pull
+
+Naive `OPRA.PILLAR.statistics SPY.OPT parent` is far too expensive. The pipeline filters the
+contract universe first, then pulls statistics against only the kept instrument_ids:
+
+1. **Stage 1** (`make data` / `databento_pull --confirm`): pull `OPRA.PILLAR/definition` for
+   `SPY.OPT` (cheap) and `ARCX.PILLAR/tbbo` for SPY equity (tbbo = trade + BBO snapshot at trade
+   time, ~10x cheaper than mbp-1 for SPY 2023→2026).
+2. **Build id list** (`python -m ingest.build_id_list configs/databento_pulls.yaml`): join
+   definitions against daily SPY spot, filter to live contracts within ±20% moneyness, DTE ∈ [7, 60],
+   monthly expiries only (3rd Friday, where dealer OI concentrates; cuts ~80% of contract count to
+   fit the free credit). Per-month id-list chunks land in `data/interim/id_list_chunks/*.json`.
+3. **Stage 2** (`python -m ingest.databento_pull --quote-stage2` then `--confirm-stage2`): submit
+   one filtered-statistics job per (month, chunk) using `stype_in=instrument_id`. Total ~$94.74 for
+   2024-08 → 2026-04.
+
+`data/raw/manifest.json` records every batch job (job_id, sha256, dates, sample-vs-full). Resume an
+in-flight job without re-charging via `python -m ingest.databento_pull --resume <JOB_ID> --name <hint>`.
+
+Free data (`yfinance` VIX/VIX9D/VIX3M/VVIX/SPY/VXX/VIXY and FRED `DGS3MO`) lands under
+`data/raw/yfinance/` and `data/raw/fred/` via separate pull scripts, driven by `configs/free_pulls.yaml`.
 
 ## Conventions
 
-- Configs are the source of truth for windows, thresholds, and feature toggles. Defaults live in dataclasses inside each module, but production runs go through YAML.
-- All parquet/manifest writes are relative to `REPO_ROOT = Path(__file__).resolve().parents[1]`. Don't hardcode absolute paths.
-- New features should land in `features/`, expose a `run(df, cfg) -> daily_frame` function, and be joined in `features/assemble.py` with explicit `shift(1)` if they use any same-day information.
+- Configs are the source of truth for windows, thresholds, and feature toggles. Defaults live in
+  dataclasses inside each module; production runs go through YAML.
+- All parquet/manifest writes are relative to `REPO_ROOT = Path(__file__).resolve().parents[1]`.
+  Do not hardcode absolute paths.
+- New features land in `features/`, expose `run(df, cfg) -> daily_frame`, and are joined in
+  `features/assemble.py` with explicit `shift(1)` if they use any same-day information.
 - Python 3.11+, `from __future__ import annotations` at the top of every module.
+
+## v1 lessons (so they are not repeated)
+
+The original version shipped a clean, leakage-disciplined classifier pipeline but pointed it at the
+wrong question. The lessons that survive:
+
+- **Test the cheapest kill-switch first.** v1 spent the entire ~$95 Databento credit pulling OPRA to
+  build a scalar GEX feature before checking whether GEX beats free VIX. It does not: `corr(gex, vix_z)
+  ≈ −0.69`, and cross-validated AUC *falls* when GEX is added. A two-line free-data baseline would
+  have de-risked the most expensive decision in the project.
+- **Signal before strategy.** v1 headlined a "+0.84 Sharpe" that was a single day (2026-01-16); an
+  equal-notional constant-long beat it, and the ML signal subtracted value. Do not build or headline a
+  strategy until the signal is established.
+- **At small N, spend on inductive bias and inference, not model count.** Six models where the
+  effective sample cannot distinguish any of them is wasted effort.
+- **One pinned config, every number reconciled to the artifact that produced it.** v1's docs drifted
+  out of sync with the shipped config, which destroys the credibility a quant project sells.
+
+The v2 strategy's extension roadmap (continuous roll/slope sizing, forward-VRP conditioning, a convex
+left-tail floor; dead-ends are gamma/DIX timing and naive vol-targeting) is folded into `STRATEGY.md` §7.

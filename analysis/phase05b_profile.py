@@ -214,7 +214,7 @@ def main():
         print("NULL: gamma profile SHAPE adds NO positive signal beyond VIX/HAR/net-gamma on this window.")
     if harmful:
         print("Note: profile features significantly DEGRADE", ", ".join(h[0] for h in harmful),
-              "(small-N overfit — exactly the F3 risk the spec flagged).")
+              "(small-N overfit of the by-strike-profile features).")
     print("=> If null, the 21-month window is EXHAUSTED (level, path, dynamics, tails, regime, shape "
           "all tested). Remaining real tests: intraday (timescale) or deep-history (power) — or write up the null.")
 

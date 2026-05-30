@@ -1,9 +1,9 @@
-"""v2 strategy tests — data-free (synthetic panels), so CI runs without the gitignored data.
+"""Strategy tests: data-free (synthetic panels), so CI runs without the gitignored data.
 
 The headline guarantee of the whole project is no look-ahead: a position formed for day t may
 use only information available at the close of t-1. `test_no_lookahead_end_to_end` enforces it
-the same way the internal adversarial audit did — perturb a raw input strictly in the FUTURE and
-assert every earlier position and cumulative P&L is byte-identical.
+by perturbing a raw input strictly in the FUTURE and asserting every earlier position and
+cumulative P&L is byte-identical.
 """
 from __future__ import annotations
 

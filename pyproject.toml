@@ -1,7 +1,7 @@
 [project]
 name = "spy_vol"
 version = "0.2.0"
-description = "Dealer-gamma vs realized-volatility signal study + a risk-managed short-vol VRP carry strategy (v2)"
+description = "A risk-managed short-vol VRP carry strategy + a dealer-gamma vs realized-volatility signal study"
 requires-python = ">=3.11"
 # v2 core (analysis/: FINDINGS deep-history + STRATEGY) needs only the lean scientific stack.
 # databento + py-vollib + pyyaml are retained for the OPRA ingest / 21-month sub-study (features/, ingest/).
@@ -28,13 +28,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-# v1 strategy packages (models/, backtest/, report/, live/) are quarantined under legacy/.
+# Installed packages: Databento ingest + feature-eng used by the 21-month OPRA sub-study.
+# The deliverables in analysis/ run as scripts and import neither.
 include = ["ingest*", "features*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["**/__pycache__", "**/.ipynb_checkpoints", "legacy/**"]
+extend-exclude = ["**/__pycache__", "**/.ipynb_checkpoints"]
 
 [tool.ruff.lint.per-file-ignores]
 # Notebooks deliberately mutate sys.path before importing project modules,

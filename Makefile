@@ -1,7 +1,7 @@
 PY ?= python
 
 .PHONY: install test lint strategy findings figures notebook all clean \
-        quote sample data legacy-help
+        quote sample data
 
 # ---------------------------------------------------------------- v2 deliverables ----
 install:                        ## editable install + dev tools (pytest, ruff)
@@ -43,9 +43,6 @@ data:                           ## full pull (real charge — verify quote first
 	$(PY) -m ingest.databento_pull --confirm configs/databento_pulls.yaml
 	$(PY) -m ingest.yfinance_pull configs/free_pulls.yaml
 	$(PY) -m ingest.fred_pull configs/free_pulls.yaml
-
-legacy-help:                    ## the superseded v1 pipeline lives under legacy/ (see legacy/README.md)
-	@echo "v1 (volatility classifier -> VXX strategy) is quarantined under legacy/. See docs/v1-retrospective.md."
 
 clean:
 	rm -rf data/interim/* __pycache__ analysis/__pycache__ tests/__pycache__ .pytest_cache .ruff_cache

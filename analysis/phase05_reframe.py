@@ -4,7 +4,7 @@ Phase 0 showed dealer gamma is redundant with VIX for forecasting RV *level*.
 VIX *is* the price of forward variance, so that was the wrong target. Here we test
 whether gamma predicts what VIX does NOT price: the PATH, DYNAMICS, and TAILS of returns.
 
-PRE-REGISTERED targets (stated a priori from the dealer-hedging mechanism, 2026-05-29).
+PRE-REGISTERED targets (stated a priori from the dealer-hedging mechanism).
 All tested incremental to a VIX/HAR baseline, all reported, Bonferroni-corrected across
 the family, any hit treated as a HYPOTHESIS to confirm on deep-history/intraday data:
 

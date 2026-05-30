@@ -1,6 +1,6 @@
-"""Yang-Zhang OHLC realised-volatility — vendored into analysis/ so the v2 deliverables
-(FINDINGS deep-history + STRATEGY) have ZERO dependency on the quarantined v1 `features/`
-tree (see legacy/). The 21-month OPRA sub-study still imports `features/` directly.
+"""Yang-Zhang OHLC realised-volatility, vendored into analysis/ so the deliverables
+(FINDINGS deep-history + STRATEGY) have ZERO dependency on the `features/` tree. The
+21-month OPRA sub-study still imports `features/` directly.
 
 Single-day Yang-Zhang-style RV from daily OHLC: an overnight close-to-open variance plus a
 Garman-Klass intraday-range variance. The standard OHLC-only estimator used when tick data is
