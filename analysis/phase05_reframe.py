@@ -112,7 +112,7 @@ def main():
     lrv = np.log(df["rv"])
     df["har_d"] = lrv.shift(1); df["har_w"] = lrv.rolling(5).mean().shift(1); df["har_m"] = lrv.rolling(22).mean().shift(1)
     # path / return building blocks (day t)
-    c = df["close"]; o = df["open"]; h = df["high"]; lo = df["low"]
+    c = df["close"]; h = df["high"]; lo = df["low"]
     df["ret"] = np.log(c / c.shift(1))
     df["parkinson"] = (np.log(h / lo) ** 2) / (4 * np.log(2))           # intraday range variance
     df["lpark"] = 0.5 * np.log(df["parkinson"].clip(lower=1e-10))       # T1 target: log intraday-range vol

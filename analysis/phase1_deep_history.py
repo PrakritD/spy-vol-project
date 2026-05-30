@@ -22,8 +22,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, log_loss
 
 REPO = __file__.rsplit("/analysis/", 1)[0]
-sys.path.insert(0, REPO)
-from features.rv_target import daily_yang_zhang_rv  # noqa: E402
+sys.path.insert(0, REPO + "/analysis")
+from rvutil import daily_yang_zhang_rv  # noqa: E402  (vendored; no v1 dependency)
 
 TRAIN0 = 504        # ~2y initial train
 REFIT_EVERY = 5     # refit cadence (days) for speed; predictions still daily OOS

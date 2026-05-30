@@ -1,0 +1,20 @@
+# Lean v2 stack. The analysis/ deliverables (FINDINGS deep-history + STRATEGY) need only these.
+# `make test` and the walkthrough notebook need just the top block (no licensed data).
+numpy>=1.26
+pandas>=2.2
+pyarrow>=15
+scipy>=1.13
+scikit-learn>=1.5
+matplotlib>=3.9
+yfinance>=0.2.40
+pandas-datareader>=0.10
+# dev
+pytest>=8
+ruff>=0.5
+# notebook
+jupyter>=1.0
+nbconvert>=7.0
+# only needed to re-pull the OPRA 21-month sub-study (features/, ingest/); not for v2 core
+databento>=0.45
+py-vollib>=1.0.1
+pyyaml>=6.0

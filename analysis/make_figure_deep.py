@@ -6,7 +6,6 @@ Stats are the verified outputs of analysis/phase1_deep_history.py and
 analysis/phase1_robustness.py (cited inline); effect size noted in the caption.
 """
 from __future__ import annotations
-import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

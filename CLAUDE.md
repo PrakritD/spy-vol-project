@@ -6,19 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SPY next-day realised-volatility regime classifier + VXX long-flat trading strategy. Binary target: `RV_{t+1} > trailing 21-day mean RV`. Signals are GEX (dealer gamma exposure from OPRA options) and lagged VIX-family term structure. The microstructure feature group (OBI, signed flow from intraday SPY tbbo) was designed but **not built** — ARCX SPY tbbo was never pulled because the project ran on the free $100 Databento credit which OPRA stage-2 consumed.
 
-**Status (v2, 2026-05 — supersedes the v1 framing above).** The v1 "classifier → VXX strategy" was audited and its headline "+0.84 Sharpe" shown to be a single-day artifact (`docs/v1-retrospective.md`). The project was reframed to a **dealer-gamma vs realized-volatility signal investigation**. Current deliverable: **`FINDINGS.md`** — dealer gamma is ~95% a VIX echo (a clean null on the calm 21-month OPRA window across six pre-registered formulations) but carries a **small, robust, gamma-specific increment** on 15 years of free deep-history data (gamma-only Diebold-Mariano on CRPS p=0.001; not DIX; survives a richer VIX baseline). Evidence: `analysis/phase1_deep_history.py`, `analysis/phase1_robustness.py`, `analysis/phase0*.py`. Design + scope: `docs/superpowers/specs/2026-05-29-gamma-regime-vol-design.md`. The v1 pipeline documented below still exists and runs, but its conclusions are superseded. Analyses run in the `trading` conda env (pyarrow/scikit-learn/scipy); free deep data is fetched, not committed (vendor ToS).
+**Status (v2, 2026-05 — supersedes the v1 framing above).** The v1 "classifier → VXX strategy" was audited and its headline "+0.84 Sharpe" shown to be a single-day artifact (`docs/v1-retrospective.md`). The project was reframed to a **dealer-gamma vs realized-volatility signal investigation**. Current deliverable: **`FINDINGS.md`** — dealer gamma is ~95% a VIX echo (a clean null on the calm 21-month OPRA window across six pre-registered formulations) but carries a **small, robust, gamma-specific increment** on 15 years of free deep-history data (gamma-only Diebold-Mariano on CRPS p=0.001; not DIX; survives a richer VIX baseline). Evidence: `analysis/phase1_deep_history.py`, `analysis/phase1_robustness.py`, `analysis/phase0*.py`. Design + scope: `docs/superpowers/specs/2026-05-29-gamma-regime-vol-design.md`. Analyses run in the `trading` conda env (`/opt/anaconda3/envs/trading/bin/python`; pyarrow/scikit-learn/scipy; statsmodels absent — OLS/Newey-West/CRPS are hand-rolled). Free deep data is fetched, not committed (vendor ToS).
+
+**Second deliverable — `STRATEGY.md` (2026-05, audit-hardened).** A risk-managed short-vol **VRP carry** (`analysis/strategy_two_sleeve.py`): short VIXY only when `VIX<VIX3M` (contango). 2011–2026, net of costs+borrow: Sharpe 0.74, Calmar 0.56, maxDD −15%. Honest verdict (after a self-run multi-agent adversarial audit dismantled a first draft's over-claims): it does **not** beat SPY on Sharpe/Sortino; the durable edge is **drawdown control** (Calmar 0.56 vs 0.38). DSR is a **range 0.66–0.81** (not the clone-inflated 0.98 a draft reported); gamma/DIX/timing all null. Figures: `analysis/make_figure_strategy.py`; cited extension roadmap: `docs/strategy-extensions-research.md`; walkthrough: `notebooks/strategy_walkthrough.ipynb`.
+
+**Repo layout (v2).** The live tree is `analysis/` (v2 deliverables), `features/`+`ingest/`+`configs/` (feature-eng + Databento ingest, retained for the 21-month OPRA sub-study), `tests/` (data-free v2 tests), `notebooks/`. **The v1 strategy pipeline is quarantined under `legacy/`** (`models/ backtest/ report/ live/ paper/` + v1 tests + `STATISTICAL_RIGOR.md`); see `legacy/README.md`. The v2 core has zero `features/` dependency — the Yang-Zhang RV helper was vendored to `analysis/rvutil.py`.
 
 ## Commands
 
 ```bash
 make install                 # pip install -e ".[dev]"
-make test                    # pytest -q
-pytest tests/test_no_lookahead.py::test_target_no_future_leak   # single test
-make features                # build data/processed/features_panel.parquet
-make backtest                # walk-forward over configs/experiment.yaml
-make report                  # render PDF to report/_build/
-ruff check .                 # lint (line-length 100, py311 target)
+make test                    # pytest -q  (data-free; no-lookahead gate on synthetic panels)
+make lint                    # ruff check analysis tests
+make strategy                # STRATEGY.md backtest -> analysis/strategy_results.json
+make findings                # FINDINGS.md deep-history + robustness
+make figures                 # regenerate committed figures
+make notebook                # execute notebooks/strategy_walkthrough.ipynb in place
+make all                     # findings + strategy + figures + notebook + test
 ```
+
+The v2 gate is `tests/test_strategy.py::test_no_lookahead_end_to_end` (perturbs raw inputs strictly
+in the future, asserts earlier positions & cumulative P&L are byte-identical). Use the trading env
+python directly for ad-hoc runs: `/opt/anaconda3/envs/trading/bin/python analysis/strategy_two_sleeve.py`.
 
 Databento ingest is gated to prevent accidental spend:
 
@@ -42,7 +51,9 @@ Naive `OPRA.PILLAR.statistics SPY.OPT parent` is far too expensive. The pipeline
 
 Free data (`yfinance` VIX/VIX9D/VIX3M/VVIX/SPY/VXX and FRED `DGS3MO`) lands under `data/raw/yfinance/` and `data/raw/fred/` via separate pull scripts, driven by `configs/free_pulls.yaml`.
 
-## Architecture
+## Architecture (v1 — now under `legacy/`)
+
+> The DAG below describes the **quarantined v1 pipeline** (`models/ backtest/ report/ live/` now live in `legacy/`). It is retained for the retrospective; its conclusions are superseded by `FINDINGS.md` / `STRATEGY.md`. The live v2 work is the self-contained scripts in `analysis/`. `ingest/` and `features/` remain at top level (feature-eng + data provenance for the 21-month OPRA sub-study).
 
 The pipeline is a linear DAG of CLI entry points, each reading YAML config and writing parquet under `data/`. Every stage is invokable in isolation:
 

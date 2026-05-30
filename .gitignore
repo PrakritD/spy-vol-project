@@ -16,7 +16,7 @@ __pycache__/
 .envrc
 secrets/
 
-report/_build/
+**/_build/
 report/*.pdf
 
 .DS_Store
@@ -28,3 +28,6 @@ repo/
 *.egg-info/
 
 # NOTE: analysis/figures/*.png ARE committed (deliverable figures referenced by FINDINGS.md)
+
+# committable, ToS-clean dashboard curves (public VIX/VIXY/SPY-derived only)
+!analysis/strategy_curves.csv

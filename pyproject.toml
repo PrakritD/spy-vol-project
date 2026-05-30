@@ -1,46 +1,50 @@
 [project]
 name = "spy_vol"
-version = "0.1.0"
-description = "SPY volatility regime prediction and VXX trading strategy"
+version = "0.2.0"
+description = "Dealer-gamma vs realized-volatility signal study + a risk-managed short-vol VRP carry strategy (v2)"
 requires-python = ">=3.11"
+# v2 core (analysis/: FINDINGS deep-history + STRATEGY) needs only the lean scientific stack.
+# databento + py-vollib + pyyaml are retained for the OPRA ingest / 21-month sub-study (features/, ingest/).
 dependencies = [
-    "databento>=0.45",
-    "yfinance>=0.2.40",
-    "pandas-datareader>=0.10",
     "numpy>=1.26",
     "pandas>=2.2",
     "pyarrow>=15",
     "scipy>=1.13",
     "scikit-learn>=1.5",
-    "xgboost>=2.1",
-    "py-vollib>=1.0.1",
-    "torch>=2.3",
     "matplotlib>=3.9",
-    "seaborn>=0.13",
+    "yfinance>=0.2.40",
+    "pandas-datareader>=0.10",
+    "databento>=0.45",
+    "py-vollib>=1.0.1",
     "pyyaml>=6.0",
-    "tqdm>=4.66",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5", "ipykernel>=6.29", "shap>=0.44"]
-report = ["jupyter>=1.0", "nbformat>=5.10"]
+dev = ["pytest>=8", "ruff>=0.5", "ipykernel>=6.29"]
+notebook = ["jupyter>=1.0", "nbformat>=5.10", "nbconvert>=7.0"]
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["ingest*", "features*", "models*", "backtest*", "report*", "live*"]
+# v1 strategy packages (models/, backtest/, report/, live/) are quarantined under legacy/.
+include = ["ingest*", "features*"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = ["**/__pycache__", "**/.ipynb_checkpoints"]
+extend-exclude = ["**/__pycache__", "**/.ipynb_checkpoints", "legacy/**"]
 
 [tool.ruff.lint.per-file-ignores]
 # Notebooks deliberately mutate sys.path before importing project modules,
 # and have compact tutorial-style multi-statement lines.
 "notebooks/**/*.ipynb" = ["E402", "E702"]
+# analysis/ and tests/ are research scripts: they insert the repo on sys.path before
+# importing (E402), use a deliberately compact one-line-per-step style (E702), assign small
+# lambdas (E731), and use math-style short names in plotting code (E741).
+"analysis/**/*.py" = ["E402", "E702", "E731", "E741"]
+"tests/**/*.py" = ["E402", "E702", "E731"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

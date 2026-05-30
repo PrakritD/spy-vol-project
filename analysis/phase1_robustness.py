@@ -7,7 +7,6 @@ richer VIX baseline (so it isn't just 'VIX moved today' in disguise).
 """
 from __future__ import annotations
 import numpy as np
-import pandas as pd
 from phase1_deep_history import load_panel, wf_ols_crps, wf_logit, dm_test, boot_p, TRAIN0
 
 
