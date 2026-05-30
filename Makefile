@@ -1,4 +1,4 @@
-PY := /opt/anaconda3/envs/trading/bin/python
+PY ?= python
 
 .PHONY: install test lint strategy findings figures notebook all clean \
         quote sample data legacy-help

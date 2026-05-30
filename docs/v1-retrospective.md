@@ -16,7 +16,7 @@ v1 shipped a clean, leakage-disciplined pipeline. The problem was never the engi
 
 ## The efficient pattern v2 adopts
 
-- **Kill-switch first:** a 1-day go/no-go on data already on disk before any new build (`docs/superpowers/specs/2026-05-29-gamma-regime-vol-design.md` §11).
+- **Kill-switch first:** a 1-day go/no-go on data already on disk before any new build (`docs/specs/2026-05-29-gamma-regime-vol-design.md` §11).
 - **One falsifiable question:** does the *nonlinear/threshold/shape* structure of dealer gamma beat VIX/HAR — judged by a Diebold-Mariano test on CRPS — accepting a clean null as a real result.
 - **Depth in the mechanism, not the model zoo:** a learned gamma-flip (LSTAR), a calibrated density, and a stochastic-calculus layer that treats dealer hedging as the continuous-time process it actually is.
 - **Signal before strategy:** the output stays deployment-agnostic until it is established.

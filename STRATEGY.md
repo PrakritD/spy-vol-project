@@ -135,8 +135,8 @@ The roadmap is equally explicit about **dead-ends to drop** (gamma/DIX timing, n
 
 ```bash
 # env with numpy/scipy/scikit-learn/pandas/pyarrow + matplotlib; fetchers download free data
-/opt/anaconda3/envs/trading/bin/python analysis/strategy_two_sleeve.py   # full backtest + tables -> strategy_results.json
-/opt/anaconda3/envs/trading/bin/python analysis/make_figure_strategy.py  # the two figures
+python analysis/strategy_two_sleeve.py   # full backtest + tables -> strategy_results.json
+python analysis/make_figure_strategy.py  # the two figures
 ```
 
 Data is **fetched, not committed** (SqueezeMetrics' terms bar redistribution; price history is large): SqueezeMetrics GEX/DIX, CBOE VIX, yfinance SPY/VIXY/VIX-family, FRED DGS3MO. Window 2011-07 → 2026-05.

@@ -2,6 +2,8 @@
 
 [![ci](https://github.com/PrakritD/spy-vol-project/actions/workflows/ci.yml/badge.svg)](https://github.com/PrakritD/spy-vol-project/actions/workflows/ci.yml)
 
+> **Two honest quant deliverables on $0 of free data** — a **[dealer-gamma signal study](FINDINGS.md)** and a **[risk-managed short-vol strategy](STRATEGY.md)** — built with the discipline that makes a small-or-negative result trustworthy, and **stress-tested by a self-run multi-agent adversarial audit that caught and corrected my own over-claims** (a fake "+0.84 Sharpe" in v1; a clone-inflated Deflated Sharpe in a v2 draft). Calibrated truth over a manufactured headline — in both directions.
+
 **Is dealer gamma exposure a VIX echo?** Mostly — but not entirely.
 
 > Dealer gamma tracks realized vol enormously (short-gamma days carry far higher RV, t ≈ +28 over 15 years) yet is **~95% redundant with VIX**. On a calm 21-month window the residual is **undetectable** (a clean null across six pre-registered formulations). On **15 years across real stress regimes it is a small but statistically robust increment** beyond a full VIX/HAR baseline — **gamma-only Diebold-Mariano on CRPS p = 0.001, ΔAUC p = 0.001** — and that increment is genuinely *gamma* (not the Dark-Index flow signal) and survives a richer VIX baseline. The edge is **real and economically small**. Finding it required statistical power, multiple regimes, and a confound check.
@@ -28,7 +30,7 @@ A study of whether options-dealer **gamma exposure** carries realized-volatility
 
 ## Honest provenance (v1 → v2)
 
-This repo began as a "vol-regime classifier → VXX long-flat strategy" (v1). An audit found that v1 was **fooling itself**: its "+0.84 Sharpe" was a single lucky day, its GEX feature was a VIX echo, and its headline numbers didn't match the shipped config. That story — and why it's instructive — is in [`docs/v1-retrospective.md`](docs/v1-retrospective.md). The reframe to the falsifiable gamma question is in [`docs/superpowers/specs/2026-05-29-gamma-regime-vol-design.md`](docs/superpowers/specs/2026-05-29-gamma-regime-vol-design.md). The v1 pipeline is **quarantined under [`legacy/`](legacy/)** (not deleted — the reason it was abandoned is part of the story); its conclusions are superseded by `FINDINGS.md` / `STRATEGY.md`. The same self-correction recurred *inside* v2: a first draft of the strategy over-claimed (a clone-inflated Deflated Sharpe, a "beats SPY" framing), and a self-run multi-agent adversarial audit caught and fixed it — the published numbers are what survived.
+This repo began as a "vol-regime classifier → VXX long-flat strategy" (v1). An audit found that v1 was **fooling itself**: its "+0.84 Sharpe" was a single lucky day, its GEX feature was a VIX echo, and its headline numbers didn't match the shipped config. That story — and why it's instructive — is in [`docs/v1-retrospective.md`](docs/v1-retrospective.md). The reframe to the falsifiable gamma question is in [`docs/specs/2026-05-29-gamma-regime-vol-design.md`](docs/specs/2026-05-29-gamma-regime-vol-design.md). The v1 pipeline is **quarantined under [`legacy/`](legacy/)** (not deleted — the reason it was abandoned is part of the story); its conclusions are superseded by `FINDINGS.md` / `STRATEGY.md`. The same self-correction recurred *inside* v2: a first draft of the strategy over-claimed (a clone-inflated Deflated Sharpe, a "beats SPY" framing), and a self-run multi-agent adversarial audit caught and fixed it — the published numbers are what survived.
 
 ## Repository layout
 

@@ -16,8 +16,8 @@ v1 reported a headline **"+0.84 Sharpe over 82 OOS days."** An audit showed that
 | `live/` | v1 `predict_today.py` | superseded |
 | `paper/` | v1 LaTeX write-up | superseded |
 | `tests/` | v1 pipeline/metrics/sizing/execution/no-lookahead tests | superseded (v2 tests live in `../tests/`) |
+| `notebooks/` | v1 thesis / signal-construction / models notebooks | superseded (v2 walkthrough is `../notebooks/strategy_walkthrough.ipynb`) |
 | `STATISTICAL_RIGOR.md` | rigor note scoped to the 21-month window / old README headline | superseded framing |
-| `Outline.md`, `Project Plan.md`, `ship.md` | early planning docs | historical |
 
 ## What was deliberately **kept** in the live tree
 

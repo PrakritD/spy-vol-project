@@ -14,7 +14,7 @@ T-1 open interest. Trades are sized from prior-close signals; P&L is close-to-cl
 reliable free intraday). Headline numbers sit next to the naive-carry benchmark, the
 Deflated Sharpe over all variants tried, maxDD, and the blowups IN-SAMPLE.
 
-Run:  /opt/anaconda3/envs/trading/bin/python analysis/strategy_two_sleeve.py
+Run:  python analysis/strategy_two_sleeve.py
 """
 from __future__ import annotations
 

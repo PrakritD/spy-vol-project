@@ -99,7 +99,7 @@ python analysis/phase0_gonogo.py         # 21-month sub-study (level)
 python analysis/phase05_reframe.py       # 21-month sub-study (path/dynamics/tails/regime)
 python analysis/phase05b_profile.py      # 21-month sub-study (profile shape)
 ```
-Design/scope: `docs/superpowers/specs/2026-05-29-gamma-regime-vol-design.md`. Why v1 was abandoned: `docs/v1-retrospective.md`.
+Design/scope: `docs/specs/2026-05-29-gamma-regime-vol-design.md`. Why v1 was abandoned: `docs/v1-retrospective.md`.
 
 ## 8. What this project demonstrates
 
