@@ -14,10 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install (lean v2 scientific stack — no licensed data needed)
+      - name: Install (the same editable install a user runs; no licensed data needed)
         run: |
           python -m pip install --upgrade pip
-          pip install numpy pandas pyarrow scipy scikit-learn matplotlib pytest ruff
+          pip install -e ".[dev]"
       - name: Lint
         run: ruff check analysis tests
       - name: Test (data-free; the no-lookahead gate runs on synthetic panels)

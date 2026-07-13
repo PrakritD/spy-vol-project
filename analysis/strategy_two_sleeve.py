@@ -66,9 +66,14 @@ def load_panel() -> pd.DataFrame:
 
     rf = pq("data/raw/fred/dgs3mo_deep.parquet", ["date", "dgs3mo"])
 
-    df = (spy.merge(vixy, on="date", how="inner")
-             .merge(sq, on="date", how="inner")
-             .merge(vix, on="date", how="inner")
+    base = spy.merge(vixy, on="date", how="inner").merge(vix, on="date", how="inner")
+    df = base.merge(sq, on="date", how="inner")
+    # GEX/DIX may only gate the START of the panel (their history begins 2011-05). A mid-sample
+    # gap would splice a multi-day return into one row and corrupt every downstream number.
+    mid = base.loc[base["date"] >= df["date"].min(), "date"]
+    if not mid.isin(df["date"]).all():
+        raise ValueError("SqueezeMetrics has mid-sample gaps; refusing to splice returns")
+    df = (df
              .merge(lvl("VIX3M", "vix3m"), on="date", how="left")
              .merge(lvl("VIX9D", "vix9d"), on="date", how="left")
              .merge(lvl("VVIX", "vvix"), on="date", how="left")
@@ -303,25 +308,6 @@ def sleeve_excess(pos: np.ndarray, asset_ret: np.ndarray, rf_d: np.ndarray,
     return r
 
 
-def combine_volparity(r1: np.ndarray, r2: np.ndarray, lookback: int = 63) -> np.ndarray:
-    """Inverse-vol (risk-parity) weighting of two sleeve excess-return streams, weights set
-    from trailing vol only (<= t-1)."""
-    s1 = pd.Series(r1).rolling(lookback).std().shift(1).to_numpy()
-    s2 = pd.Series(r2).rolling(lookback).std().shift(1).to_numpy()
-    ok = (s1 > 0) & (s2 > 0)
-    w1 = np.where(ok, 1 / np.where(s1 > 0, s1, 1), 0.0)
-    w2 = np.where(ok, 1 / np.where(s2 > 0, s2, 1), 0.0)
-    tot = w1 + w2
-    w1 = np.divide(w1, tot, out=np.full_like(w1, 0.5), where=tot > 0)
-    w2 = 1 - w1
-    # scale combined to ~TARGET_VOL using trailing combined vol
-    raw = w1 * r1 + w2 * r2
-    cv = pd.Series(raw).rolling(lookback).std().shift(1).to_numpy()
-    scale = np.where(cv > 0, TARGET_VOL / cv, 0.0)
-    scale = np.clip(scale, 0, 3.0)
-    return np.nan_to_num(raw * scale, nan=0.0)
-
-
 # -------------------------------------------------------------- metrics ----
 def _dd(equity: np.ndarray):
     peak = np.maximum.accumulate(equity)
@@ -492,7 +478,7 @@ def main():
     print("\n--- BENCHMARKS ---")
     Mb = {}
     for nm, r in [("buy-hold SPY (excess)", bh_spy), ("buy-hold SPY (total ret)", sret),
-                  ("60/40 (SPY/cash, excess)", sixty40), ("cash", np.zeros(len(d)))]:
+                  ("0.6x SPY (vol-matched, excess)", sixty40), ("cash", np.zeros(len(d)))]:
         Mb[nm] = metrics(r, dates, nm); print(_fmt(Mb[nm]))
     H = Ml["3. + CONTANGO FILTER  <<HEADLINE"]
     spx_e, spx_t = Mb["buy-hold SPY (excess)"], Mb["buy-hold SPY (total ret)"]
@@ -720,7 +706,16 @@ def main():
         eq[nm] = np.cumprod(1 + np.nan_to_num(r, nan=0.0))
     eq["inmkt"] = fc; eq["vix_over_vix3m"] = d["t_30_90"].to_numpy()
     eq.to_parquet(f"{REPO}/analysis/strategy_equity.parquet", index=False)
-    print("\nsaved analysis/strategy_results.json + analysis/strategy_equity.parquet")
+    # the committed, ToS-clean curve file the walkthrough notebook reads (public series only)
+    def _dd_curve(e):
+        return e / np.maximum.accumulate(e) - 1.0
+    curves = eq[["date", "carry", "constant", "spy_total", "inmkt", "vix_over_vix3m"]].copy()
+    curves["carry_dd"] = _dd_curve(eq["carry"].to_numpy())
+    curves["spy_dd"] = _dd_curve(eq["spy_total"].to_numpy())
+    curves = curves[["date", "carry", "constant", "spy_total", "carry_dd", "spy_dd",
+                     "inmkt", "vix_over_vix3m"]]
+    curves.to_csv(f"{REPO}/analysis/strategy_curves.csv", index=False)
+    print("\nsaved analysis/strategy_results.json + strategy_equity.parquet + strategy_curves.csv")
 
 
 if __name__ == "__main__":

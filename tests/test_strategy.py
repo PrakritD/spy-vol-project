@@ -123,6 +123,74 @@ _NEED = ["vixy_ret", "spy_ret", "vixy_vol21", "t_30_90", "t_9_30", "vix_z", "vvi
          "gex_neg", "amihud_z", "rf_d"]
 
 
+def test_timing_sleeve_is_causal():
+    """The walk-forward logistic timing sleeve shares the ML machinery, so it gets the same
+    guarantee: perturb raw inputs only in the far-future tail, earlier positions are identical."""
+    n = 1100
+    panel = _synthetic_panel(n=n)
+    d0 = S.build_signals(panel).dropna(subset=_NEED).reset_index(drop=True)
+    pos0, _ = S.timing_positions(d0)
+
+    perturbed = panel.copy()
+    fut = perturbed.index >= (n - 100)
+    rng = np.random.default_rng(321)
+    for col in ["vix", "vix3m", "vix9d", "vvix", "gex", "dix", "vixy_adj", "spy_adj", "spy_vol", "rv"]:
+        perturbed.loc[fut, col] = perturbed.loc[fut, col] * rng.uniform(0.5, 1.5, fut.sum())
+    d1 = S.build_signals(perturbed).dropna(subset=_NEED).reset_index(drop=True)
+    pos1, _ = S.timing_positions(d1)
+
+    c = min(len(pos0), len(pos1)) - 200
+    assert c > S.TRAIN0
+    np.testing.assert_array_equal(pos0[:c], pos1[:c])
+
+
+def test_metrics_golden_values():
+    """Pin the metric formulas to closed-form values on a deterministic series: alternating
+    +1.1%/-0.9% has mean 0.001, population sd exactly 0.01, and a -0.9% max drawdown."""
+    r = np.tile([0.011, -0.009], 500)
+    m = S.metrics(r, None, "golden")
+    np.testing.assert_allclose(m["sharpe"], 0.001 / 0.01 * np.sqrt(S.ANN), rtol=1e-9)
+    np.testing.assert_allclose(m["maxdd"], -0.009, rtol=1e-9)
+    np.testing.assert_allclose(m["cagr"], (1.011 * 0.991) ** (S.ANN / 2) - 1, rtol=1e-9)
+    np.testing.assert_allclose(m["calmar"], m["cagr"] / 0.009, rtol=1e-9)
+    np.testing.assert_allclose(m["ann_vol"], 0.01 * np.sqrt(S.ANN), rtol=1e-9)
+
+
+def test_deflated_sharpe_golden_values():
+    """With no selection haircut (sr_trials_std=0) DSR must equal PSR-vs-0, and on the symmetric
+    two-point series PSR has a closed form; more trials must always mean a lower DSR."""
+    from scipy.stats import norm
+    r = np.tile([0.011, -0.009], 500)
+    ds0 = S.deflated_sharpe(r, n_trials=2, sr_trials_std=0.0)
+    assert ds0["dsr"] == ds0["psr_vs0"]
+    np.testing.assert_allclose(ds0["psr_vs0"], norm.cdf(0.1 * np.sqrt(999)), rtol=1e-3)
+    ds_few = S.deflated_sharpe(r, n_trials=5, sr_trials_std=0.02)
+    ds_many = S.deflated_sharpe(r, n_trials=100, sr_trials_std=0.02)
+    assert ds_many["dsr"] < ds_few["dsr"] < ds0["dsr"]
+
+
+def test_hac_tstat_tracks_classic_t_when_iid():
+    """On an iid series the Newey-West t must sit near the classic t (no autocorrelation to
+    correct), and it must never be negative for a positive-mean series."""
+    rng = np.random.default_rng(5)
+    x = rng.normal(0.0005, 0.01, 3000)
+    t_hac = S.hac_tstat(x)
+    t_classic = x.mean() / (x.std() / np.sqrt(len(x)))
+    assert 0.8 < t_hac / t_classic < 1.2
+    assert t_hac > 0
+
+
+def test_pinned_headline_on_synthetic_panel():
+    """Regression pin: the carry pipeline on the seeded synthetic panel must keep producing the
+    same numbers. Catches silent drift in signals, costs, or metric math from any refactor."""
+    d, pos, pnl = _run_carry(_synthetic_panel(n=800))
+    m = S.metrics(pnl, None, "pin")
+    assert m["n"] == 739
+    assert int((pos != 0).sum()) == 359
+    np.testing.assert_allclose(m["sharpe"], 0.7927492070, atol=1e-8)
+    np.testing.assert_allclose(m["maxdd"], -0.0800484157, atol=1e-8)
+
+
 def test_ml_sizing_is_causal_and_lagged():
     """The walk-forward Ridge sizing layer must not leak the future: perturb raw inputs only in
     the far-future tail and assert earlier ML positions are byte-identical. Causal by
