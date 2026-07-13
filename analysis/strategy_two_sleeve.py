@@ -189,7 +189,7 @@ def carry_rollyield(d: pd.DataFrame, notional: float = NOTIONAL, full_at: float 
 
 
 # --- Sleeve 2: SPY tactical timing via walk-forward logistic on flow/positioning/trend ---
-from sklearn.linear_model import LogisticRegression  # noqa: E402
+from sklearn.linear_model import LogisticRegression, Ridge  # noqa: E402
 
 TIMING_FEATS = ["dix_z", "dix_chg", "gex_pct", "gex_neg", "trend", "mom_21", "mom_63",
                 "vix_z", "t_30_90", "relvol"]
@@ -229,6 +229,52 @@ def timing_positions(d: pd.DataFrame):
     pos = np.clip(edge, -1, 1) * size
     pos[:TRAIN0] = 0.0
     return np.nan_to_num(pos, nan=0.0), p
+
+
+# --- ML sizing layer: walk-forward Ridge magnitude sizing (Path-2 validated variant) ---
+ML_FEATS = ["t_30_90", "t_9_30", "vvix_vix", "vix_l", "vix_z", "vvix_z",
+            "har_d", "har_w", "har_m", "gex_pct", "gex_neg"]
+ML_ALPHA = 10.0   # Ridge regularization, fixed a priori (standardized features); no alpha-tuning leak
+
+
+def ml_size_positions(d: pd.DataFrame, notional: float = NOTIONAL,
+                      alpha: float = ML_ALPHA, cap: float = 2.0, gate: np.ndarray | None = None):
+    """Continuous, magnitude-scaled short sizing learned walk-forward. A regularized-linear
+    (Ridge) model predicts next-day SHORT excess return from lagged term-structure / vol-of-vol
+    / realized-vol / gamma features; the short is sized PROPORTIONAL to the predicted positive
+    carry and flat when the predicted edge <= 0. With `gate` set (e.g. the contango flag), the
+    learned magnitude scales the short only on gated days (a hybrid: keep the structural
+    flattening, let ML set the size within it); without it, ML fully replaces the binary gate.
+
+    Causal by construction (so the no-lookahead gate holds): expanding walk-forward, train-only
+    standardization, monthly refit, 5-day embargo, and an EXPANDING (<= t-1) exposure
+    normaliser. Returns (signed short notional, raw prediction)."""
+    X = d[ML_FEATS].to_numpy()
+    yshort = -(d["vixy_ret"].to_numpy() - d["rf_d"].to_numpy())   # excess return to a UNIT short
+    n = len(d)
+    pred = np.full(n, np.nan)
+    mdl = mu = sd = None
+    valid = (~np.isnan(X).any(1)) & (~np.isnan(yshort))
+    for i in range(TRAIN0, n):
+        if (i - TRAIN0) % REFIT_EVERY == 0:
+            tr = valid[: i - EMBARGO]
+            Xtr, ytr = X[: i - EMBARGO][tr], yshort[: i - EMBARGO][tr]
+            if len(ytr) < 100:
+                mdl = None
+            else:
+                mu, sd = Xtr.mean(0), Xtr.std(0); sd[sd == 0] = 1
+                mdl = Ridge(alpha=alpha).fit((Xtr - mu) / sd, ytr)
+        if not valid[i] or mdl is None:
+            continue
+        pred[i] = mdl.predict(((X[i] - mu) / sd)[None, :])[0]
+    raw = np.clip(np.nan_to_num(pred, nan=0.0), 0, None)          # short only when predicted edge > 0
+    scale = pd.Series(np.where(raw > 0, raw, np.nan)).expanding(60).mean().shift(1).to_numpy()
+    mult = np.divide(raw, scale, out=np.zeros_like(raw), where=(scale > 0) & np.isfinite(scale))
+    pos = -notional * np.clip(mult, 0.0, cap)
+    if gate is not None:
+        pos = pos * np.asarray(gate, float)                       # size only on gated (e.g. contango) days
+    pos[:TRAIN0] = 0.0
+    return np.nan_to_num(pos, nan=0.0), pred
 
 
 # ----------------------------------------------------------- backtest core ----
@@ -588,6 +634,44 @@ def main():
     print("  NOTE: the 2020-21 (COVID) block is NOT distinguishable from zero and collapses when a few days drop; "
           "do not read 'positive point estimate' as 'robust'.")
 
+    # =========================== ML SIZING LAYER (walk-forward Ridge; validated variant) ===========================
+    # Path-2 experiment: replace the binary contango gate with a continuous, magnitude-scaled short
+    # sized by a walk-forward Ridge forecast of next-day short carry. Judged on the agreed bar
+    # (Calmar/maxDD primary), with its own selection-aware Deflated Sharpe over the diverse set + itself.
+    # The binary gate stays the HEADLINE; this is reported as a validated variant.
+    pos_ml, pred_ml = ml_size_positions(d)                          # ML fully replaces the gate
+    pos_mlg, _ = ml_size_positions(d, gate=contango_flag(d))        # ML sizes magnitude WITHIN the gate
+    r_ml = bx(pos_ml); r_mlg = bx(pos_mlg)
+    M_ml = metrics(r_ml, dates, "ML sizing (replace gate)")
+    M_mlg = metrics(r_mlg, dates, "ML sizing (within gate)")
+    trials_ml = diverse + [r_ml, r_mlg]; n_ml = len(trials_ml)
+    std_ml = float(np.array([sr_po(r) for r in trials_ml]).std(ddof=1))
+    dsr_ml = deflated_sharpe(r_ml, n_ml, std_ml); dsr_mlg = deflated_sharpe(r_mlg, n_ml, std_ml)
+    pr_mlg = per_regime(r_mlg, era)
+    rho_ml = float(np.corrcoef(r_ml, r_carry)[0, 1]); rho_mlg = float(np.corrcoef(r_mlg, r_carry)[0, 1])
+    # "wins" = strictly better than the binary-gate HEADLINE on the agreed bar (less-negative maxDD is better)
+    best = M_mlg if M_mlg["calmar"] >= M_ml["calmar"] else M_ml
+    win_cal = best["calmar"] > H["calmar"]; win_dd = best["maxdd"] > H["maxdd"]
+    print("\n" + "=" * 132)
+    print("ML SIZING LAYER — walk-forward Ridge magnitude sizing vs the binary contango gate (drawdown-adjusted bar)")
+    print("=" * 132)
+    print(f"  Ridge(alpha={ML_ALPHA:g}) on lagged: {', '.join(ML_FEATS)}")
+    print(f"  {'':28s} {'Sharpe':>7s} {'Sortino':>7s} {'Calmar':>7s} {'CAGR%':>6s} {'vol%':>5s} {'maxDD%':>7s} {'DSR':>5s}")
+    print(f"  {'binary gate (HEADLINE)':28s} {H['sharpe']:>+7.2f} {H['sortino']:>+7.2f} {H['calmar']:>+7.2f} "
+          f"{H['cagr']*100:>+6.1f} {H['ann_vol']*100:>5.1f} {H['maxdd']*100:>+7.1f} {'   -':>5s}")
+    print(f"  {'ML sizing (replace gate)':28s} {M_ml['sharpe']:>+7.2f} {M_ml['sortino']:>+7.2f} {M_ml['calmar']:>+7.2f} "
+          f"{M_ml['cagr']*100:>+6.1f} {M_ml['ann_vol']*100:>5.1f} {M_ml['maxdd']*100:>+7.1f} {dsr_ml['dsr']:>5.2f}")
+    print(f"  {'ML sizing (within gate)':28s} {M_mlg['sharpe']:>+7.2f} {M_mlg['sortino']:>+7.2f} {M_mlg['calmar']:>+7.2f} "
+          f"{M_mlg['cagr']*100:>+6.1f} {M_mlg['ann_vol']*100:>5.1f} {M_mlg['maxdd']*100:>+7.1f} {dsr_mlg['dsr']:>5.2f}")
+    print(f"  corr(replace, gate)={rho_ml:+.2f} | corr(within, gate)={rho_mlg:+.2f} | N_trials={n_ml}")
+    print("  per-regime (within-gate) ML Sharpe: " + " ".join(
+        f"{b}={pr_mlg[b]['sharpe']:+.2f}(t{pr_mlg[b]['t_hac']:+.1f})" for b in ["pre2020", "2020-21", "2022+"]))
+    verdict = ("BEATS the gate on BOTH Calmar and maxDD" if (win_cal and win_dd) else
+               "improves Calmar but not maxDD" if win_cal else
+               "improves maxDD but not Calmar" if win_dd else
+               "does NOT beat the binary gate on drawdown-adjusted metrics; the structural rule wins")
+    print(f"  VERDICT (Calmar/maxDD primary): best ML sizing variant {verdict}.")
+
     # =========================== PERSIST ===========================
     out = {
         "window": [str(d['date'].min().date()), str(d['date'].max().date())], "n": int(len(d)),
@@ -614,13 +698,23 @@ def main():
         "regime": {b: {"sharpe": pr_h[b]["sharpe"], "t_hac": pr_h[b]["t_hac"], "n": pr_h[b]["n"],
                        "maxdd": pr_h[b]["maxdd"], "minus_top3": pr_h[b]["sharpe_minus_top3"]}
                    for b in ["pre2020", "2020-21", "2022+"]},
+        "ml_sizing": {
+            "features": ML_FEATS, "alpha": ML_ALPHA, "n_trials": int(n_ml),
+            "replace_gate": {**{k: M_ml[k] for k in ("sharpe", "sortino", "calmar", "cagr", "ann_vol", "maxdd")},
+                             "dsr": dsr_ml["dsr"], "corr_to_binary": rho_ml},
+            "within_gate": {**{k: M_mlg[k] for k in ("sharpe", "sortino", "calmar", "cagr", "ann_vol", "maxdd")},
+                            "dsr": dsr_mlg["dsr"], "corr_to_binary": rho_mlg,
+                            "regime": {b: {"sharpe": pr_mlg[b]["sharpe"], "t_hac": pr_mlg[b]["t_hac"]}
+                                       for b in ["pre2020", "2020-21", "2022+"]}},
+            "beats_binary_calmar": bool(win_cal), "beats_binary_maxdd": bool(win_dd),
+        },
     }
     with open(f"{REPO}/analysis/strategy_results.json", "w") as f:
         json.dump(out, f, indent=2, default=float)
     eq = pd.DataFrame({"date": pd.to_datetime(dates)})
     for nm, r in [("constant", r_const), ("voltarget", r_vt), ("carry", r_carry),
-                  ("rollyield", r_roll), ("full_gate", r_full), ("timing", r_tim),
-                  ("spy_excess", bh_spy), ("spy_total", sret)]:
+                  ("rollyield", r_roll), ("full_gate", r_full), ("ml_replace", r_ml),
+                  ("ml_within", r_mlg), ("timing", r_tim), ("spy_excess", bh_spy), ("spy_total", sret)]:
         eq[nm] = np.cumprod(1 + np.nan_to_num(r, nan=0.0))
     eq["inmkt"] = fc; eq["vix_over_vix3m"] = d["t_30_90"].to_numpy()
     eq.to_parquet(f"{REPO}/analysis/strategy_equity.parquet", index=False)

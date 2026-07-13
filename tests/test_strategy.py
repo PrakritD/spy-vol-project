@@ -117,3 +117,30 @@ def test_timing_sleeve_is_lagged_and_flat_in_warmup():
     d = d.dropna(subset=need).reset_index(drop=True)
     pos, p = S.timing_positions(d)
     assert np.all(pos[:S.TRAIN0] == 0.0)                    # no position before the initial train window
+
+
+_NEED = ["vixy_ret", "spy_ret", "vixy_vol21", "t_30_90", "t_9_30", "vix_z", "vvix_z",
+         "gex_neg", "amihud_z", "rf_d"]
+
+
+def test_ml_sizing_is_causal_and_lagged():
+    """The walk-forward Ridge sizing layer must not leak the future: perturb raw inputs only in
+    the far-future tail and assert earlier ML positions are byte-identical. Causal by
+    construction (expanding walk-forward + train-only scaling + an expanding exposure scale)."""
+    n = 1100
+    panel = _synthetic_panel(n=n)
+    d0 = S.build_signals(panel).dropna(subset=_NEED).reset_index(drop=True)
+    pos0, _ = S.ml_size_positions(d0)
+
+    perturbed = panel.copy()
+    fut = perturbed.index >= (n - 100)
+    rng = np.random.default_rng(123)
+    for col in ["vix", "vix3m", "vix9d", "vvix", "gex", "dix", "vixy_adj", "spy_adj", "spy_vol", "rv"]:
+        perturbed.loc[fut, col] = perturbed.loc[fut, col] * rng.uniform(0.5, 1.5, fut.sum())
+    d1 = S.build_signals(perturbed).dropna(subset=_NEED).reset_index(drop=True)
+    pos1, _ = S.ml_size_positions(d1)
+
+    c = min(len(pos0), len(pos1)) - 200
+    assert c > S.TRAIN0                                     # compared region includes live ML positions
+    np.testing.assert_array_equal(pos0[:c], pos1[:c])       # earlier positions unchanged by future data
+    assert np.any(pos0[:c] != 0.0)                          # and the layer is actually exercised, not all-flat
