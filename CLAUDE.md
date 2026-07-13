@@ -26,7 +26,7 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | `ingest/deep_pull.py` | fetches every flagship data input; manifest in `data/raw/deep_manifest.json` |
 | `docs/ARCHITECTURE.md` | data flow, no-lookahead invariants, GEX convention, Databento pull detail, design principles |
 | `tests/test_strategy.py` | the no-lookahead perturbation gates, golden metric values, pinned synthetic headline |
-| `improvement-plan.md` (untracked) | the working review/roadmap; read it before proposing new work |
+| `ai/HANDOFF.md` (untracked, private) | REQUIRED READING for any multi-step session: protocol, hard rules, stage docs (`ai/stages/`), canonical numbers (`ai/FACTS.md`), roadmap (`ai/improvement-plan.md`) |
 
 ## Commands
 

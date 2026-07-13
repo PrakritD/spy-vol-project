@@ -17,7 +17,8 @@ __pycache__/
 secrets/
 .claude/settings.local.json
 
-# local working notes; never publish
+# private AI-workflow docs (handoffs, plans, checkpoints); never publish
+ai/
 improvement-plan.md
 v1-writeup.md
 
