@@ -1,0 +1,156 @@
+{
+  "method": "Paired Politis-Romano stationary bootstrap (geometric block lengths, wrap-around); the same resampled date indices are applied to both the carry and SPY excess-return streams, so every draw is a paired comparison.",
+  "caveat": "Bootstrap paths scramble regime ordering; resampled maxDD/Calmar draws measure the dispersion of drawdown risk under exchangeable-block resampling, not a forecast of the next realized drawdown.",
+  "data": {
+    "source": "analysis/strategy_equity.parquet",
+    "columns": [
+      "carry",
+      "spy_excess"
+    ],
+    "n_days": 3731,
+    "start": "2011-07-28",
+    "end": "2026-05-29"
+  },
+  "seed": 7,
+  "point_estimates": {
+    "carry": {
+      "sharpe": 0.7444415111187254,
+      "maxdd": -0.15281555173925837,
+      "cagr": 0.0850503827865156,
+      "calmar": 0.5565558074326942
+    },
+    "spy_excess": {
+      "sharpe": 0.7837790682903961,
+      "maxdd": -0.3376178549692123,
+      "cagr": 0.12748400370137467,
+      "calmar": 0.3775985239672826
+    },
+    "delta_calmar": 0.17895728346541157,
+    "delta_maxdd": 0.18480230322995395
+  },
+  "main": {
+    "mean_block_days": 90,
+    "n_draws": 5000,
+    "carry_calmar_ci95": [
+      0.14735843230408643,
+      1.0242466967656432
+    ],
+    "spy_calmar_ci95": [
+      0.1580428826742764,
+      0.9267540241204653
+    ],
+    "delta_calmar_ci95": [
+      -0.38332270322811396,
+      0.5195544388189126
+    ],
+    "delta_calmar_median": 0.06184431001080566,
+    "carry_maxdd_ci95": [
+      -0.28838908836636185,
+      -0.12137366973626706
+    ],
+    "spy_maxdd_ci95": [
+      -0.4576703107050713,
+      -0.192310629026059
+    ],
+    "delta_maxdd_ci95": [
+      -0.014077928710224959,
+      0.2689779275696909
+    ],
+    "delta_maxdd_median": 0.13877564952152213,
+    "carry_sharpe_ci95": [
+      0.3464158060297181,
+      1.1473475565607971
+    ],
+    "delta_sharpe_ci95": [
+      -0.4346629181737285,
+      0.3028030198353811
+    ],
+    "p_carry_calmar_gt_spy": 0.6296,
+    "p_carry_maxdd_shallower": 0.961,
+    "p_carry_maxdd_worse_than_-25pct": 0.0752
+  },
+  "sensitivity": {
+    "15": {
+      "mean_block_days": 15,
+      "n_draws": 5000,
+      "carry_calmar_ci95": [
+        0.09504281918126285,
+        0.9416123986196354
+      ],
+      "spy_calmar_ci95": [
+        0.10030649925713046,
+        1.039305875060005
+      ],
+      "delta_calmar_ci95": [
+        -0.508626198041344,
+        0.45266623008453494
+      ],
+      "delta_calmar_median": -0.006758250886530745,
+      "carry_maxdd_ci95": [
+        -0.35398095037697824,
+        -0.13565006924385428
+      ],
+      "spy_maxdd_ci95": [
+        -0.5150552584719101,
+        -0.1833706693447125
+      ],
+      "delta_maxdd_ci95": [
+        -0.059900002364685234,
+        0.29786085117822375
+      ],
+      "delta_maxdd_median": 0.10121513738919082,
+      "carry_sharpe_ci95": [
+        0.29377892803679084,
+        1.208427765232598
+      ],
+      "delta_sharpe_ci95": [
+        -0.467735656470365,
+        0.3618129385073561
+      ],
+      "p_carry_calmar_gt_spy": 0.485,
+      "p_carry_maxdd_shallower": 0.885,
+      "p_carry_maxdd_worse_than_-25pct": 0.2426
+    },
+    "180": {
+      "mean_block_days": 180,
+      "n_draws": 5000,
+      "carry_calmar_ci95": [
+        0.18152939313816027,
+        0.9961741029060761
+      ],
+      "spy_calmar_ci95": [
+        0.18248235344332273,
+        0.8580055714924104
+      ],
+      "delta_calmar_ci95": [
+        -0.2855270579077708,
+        0.5217313741797445
+      ],
+      "delta_calmar_median": 0.09679736714646714,
+      "carry_maxdd_ci95": [
+        -0.2571953314117658,
+        -0.12081114310346655
+      ],
+      "spy_maxdd_ci95": [
+        -0.43438540949823845,
+        -0.19231062902605928
+      ],
+      "delta_maxdd_ci95": [
+        0.008639726928154883,
+        0.260263557986848
+      ],
+      "delta_maxdd_median": 0.15578327643682077,
+      "carry_sharpe_ci95": [
+        0.3887668141743749,
+        1.1019918346147024
+      ],
+      "delta_sharpe_ci95": [
+        -0.4015028082578578,
+        0.29097053281400825
+      ],
+      "p_carry_calmar_gt_spy": 0.6966,
+      "p_carry_maxdd_shallower": 0.9838,
+      "p_carry_maxdd_worse_than_-25pct": 0.0336
+    }
+  }
+}

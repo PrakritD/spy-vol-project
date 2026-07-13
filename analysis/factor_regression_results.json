@@ -1,0 +1,180 @@
+{
+  "window": "2011-07-28 -> 2026-05-29",
+  "n_days": 3731,
+  "corr_carry_spy": 0.613,
+  "capm": {
+    "n": 3731,
+    "nw_lag": 16,
+    "r2": 0.3753,
+    "beta": 0.4247,
+    "beta_t": 6.44,
+    "alpha_daily": 0.00012510841989841942,
+    "alpha_ann": 0.0315,
+    "alpha_t": 1.27
+  },
+  "ff6": {
+    "n": 3731,
+    "nw_lag": 16,
+    "r2": 0.3882,
+    "alpha_ann": 0.0354,
+    "alpha_t": 1.37,
+    "loadings": {
+      "Mkt-RF": {
+        "beta": 0.4023,
+        "t": 5.79
+      },
+      "SMB": {
+        "beta": 0.0687,
+        "t": 2.72
+      },
+      "HML": {
+        "beta": -0.029,
+        "t": -0.66
+      },
+      "RMW": {
+        "beta": -0.0582,
+        "t": -1.48
+      },
+      "CMA": {
+        "beta": 0.0467,
+        "t": 0.91
+      },
+      "Mom": {
+        "beta": 0.0161,
+        "t": 0.66
+      }
+    }
+  },
+  "state_beta": {
+    "spy_down_days": {
+      "n": 1680,
+      "nw_lag": 12,
+      "r2": 0.2339,
+      "beta": 0.4178,
+      "beta_t": 3.45,
+      "alpha_daily": -0.0011482031857479192,
+      "alpha_ann": -0.2893,
+      "alpha_t": -1.61,
+      "mean_spy_excess_daily": -0.00735,
+      "mean_carry_daily": -0.00422,
+      "inmkt_share": 0.926
+    },
+    "spy_up_days": {
+      "n": 2051,
+      "nw_lag": 13,
+      "r2": 0.0784,
+      "beta": 0.1809,
+      "beta_t": 3.01,
+      "alpha_daily": 0.0028319127983798525,
+      "alpha_ann": 0.7136,
+      "alpha_t": 8.05,
+      "mean_spy_excess_daily": 0.00699,
+      "mean_carry_daily": 0.0041,
+      "inmkt_share": 0.917
+    },
+    "in_market": {
+      "n": 3436,
+      "nw_lag": 15,
+      "r2": 0.6277,
+      "beta": 0.71,
+      "beta_t": 25.84,
+      "alpha_daily": 4.7703571336397186e-05,
+      "alpha_ann": 0.012,
+      "alpha_t": 0.6,
+      "mean_spy_excess_daily": 0.00048,
+      "mean_carry_daily": 0.00039,
+      "inmkt_share": 1.0
+    },
+    "flat": {
+      "n": 295,
+      "nw_lag": 7,
+      "r2": 0.0022,
+      "beta": 0.0002,
+      "beta_t": 1.04,
+      "alpha_daily": -6.258613060110736e-05,
+      "alpha_ann": -0.0158,
+      "alpha_t": -7.41,
+      "mean_spy_excess_daily": 0.00119,
+      "mean_carry_daily": -6e-05,
+      "inmkt_share": 0.0
+    },
+    "spy_worst_decile": {
+      "n": 374,
+      "nw_lag": 7,
+      "r2": 0.0002,
+      "beta": 0.0119,
+      "beta_t": 0.11,
+      "alpha_daily": -0.01150214289409851,
+      "alpha_ann": -2.8985,
+      "alpha_t": -6.13,
+      "mean_spy_excess_daily": -0.01979,
+      "mean_carry_daily": -0.01174,
+      "inmkt_share": 0.807
+    }
+  },
+  "co_drawdowns": [
+    {
+      "spy_peak": "2011-07-28",
+      "spy_trough": "2011-10-03",
+      "days_peak_to_trough": 46,
+      "spy_dd": -0.1514,
+      "strategy_same_dates": -0.017,
+      "strategy_worst_dd_within": -0.0176,
+      "pct_days_in_market": 0.149
+    },
+    {
+      "spy_peak": "2015-07-20",
+      "spy_trough": "2016-02-11",
+      "days_peak_to_trough": 143,
+      "spy_dd": -0.1302,
+      "strategy_same_dates": -0.068,
+      "strategy_worst_dd_within": -0.1155,
+      "pct_days_in_market": 0.854
+    },
+    {
+      "spy_peak": "2018-01-26",
+      "spy_trough": "2018-02-08",
+      "days_peak_to_trough": 9,
+      "spy_dd": -0.101,
+      "strategy_same_dates": -0.0375,
+      "strategy_worst_dd_within": -0.0375,
+      "pct_days_in_market": 0.6
+    },
+    {
+      "spy_peak": "2018-09-20",
+      "spy_trough": "2018-12-24",
+      "days_peak_to_trough": 65,
+      "spy_dd": -0.1935,
+      "strategy_same_dates": -0.1176,
+      "strategy_worst_dd_within": -0.1208,
+      "pct_days_in_market": 0.606
+    },
+    {
+      "spy_peak": "2020-02-19",
+      "spy_trough": "2020-03-23",
+      "days_peak_to_trough": 23,
+      "spy_dd": -0.3372,
+      "strategy_same_dates": -0.0556,
+      "strategy_worst_dd_within": -0.0556,
+      "pct_days_in_market": 0.167
+    },
+    {
+      "spy_peak": "2022-01-03",
+      "spy_trough": "2022-10-12",
+      "days_peak_to_trough": 195,
+      "spy_dd": -0.245,
+      "strategy_same_dates": -0.1012,
+      "strategy_worst_dd_within": -0.1229,
+      "pct_days_in_market": 0.934
+    },
+    {
+      "spy_peak": "2025-02-19",
+      "spy_trough": "2025-04-08",
+      "days_peak_to_trough": 34,
+      "spy_dd": -0.1876,
+      "strategy_same_dates": -0.0339,
+      "strategy_worst_dd_within": -0.0395,
+      "pct_days_in_market": 0.6
+    }
+  ]
+}

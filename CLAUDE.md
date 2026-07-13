@@ -22,6 +22,7 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | `analysis/phase1_*.py` | the FINDINGS deep-history signal study and its confound decomposition |
 | `analysis/strategy_results.json` | the single source of every number quoted in STRATEGY.md |
 | `analysis/strategy_curves.csv` | committed, ToS-clean equity curves; the notebook's only data input |
+| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–5 |
 | `ingest/deep_pull.py` | fetches every flagship data input; manifest in `data/raw/deep_manifest.json` |
 | `docs/ARCHITECTURE.md` | data flow, no-lookahead invariants, GEX convention, Databento pull detail, design principles |
 | `tests/test_strategy.py` | the no-lookahead perturbation gates, golden metric values, pinned synthetic headline |

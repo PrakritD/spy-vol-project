@@ -6,7 +6,7 @@
 
 **So the design problem is not finding the premium; it is surviving it.** This strategy sells volatility only while a market-based warning light is off. When the VIX futures curve slopes upward (one-month VIX below three-month, the normal calm state), it shorts VIXY, an ETF built to bleed value in exactly that state. When the curve inverts, the classic pre-spike signature, it steps aside. The curve usually inverts before the spike, not during it, so the book is already flat when the damage lands.
 
-**The result, 2011–2026, net of costs and borrow:** 8.5%/yr (excess of cash) with a maximum drawdown of −15%, under half of what SPY surrendered through Volmageddon and COVID, with every short-vol blowup of the modern era inside the sample. The durable edge is drawdown control: Calmar 0.56 vs 0.38 for SPY, −15% vs −34% peak-to-trough. Sharpe (0.74) runs just behind buy-and-hold SPY, and the write-up says so plainly.
+**The result, 2011–2026, net of costs and borrow:** 8.5%/yr (excess of cash) with a maximum drawdown of −15%, under half of what SPY surrendered through Volmageddon and COVID, with every short-vol blowup of the modern era inside the sample. The durable edge is drawdown depth: −15% vs −34% peak-to-trough, shallower than SPY's in 96% of paired bootstrap resamples, and still −20% vs −34% under realistic next-open fills. Sharpe (0.74) runs just behind buy-and-hold SPY, and the write-up says so plainly.
 
 **What makes this repo different:**
 
