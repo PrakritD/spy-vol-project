@@ -140,9 +140,10 @@ The dead-ends are equally clear and not worth relitigating: gamma/DIX timing (a 
 ## 8. Reproduce
 
 ```bash
-# env with numpy/scipy/scikit-learn/pandas/pyarrow + matplotlib; fetchers download free data
+# env with numpy/scipy/scikit-learn/pandas/pyarrow + matplotlib
+python -m ingest.deep_pull               # fetch the free inputs; sha256 manifest + VIXY split check
 python analysis/strategy_two_sleeve.py   # full backtest + tables -> strategy_results.json
 python analysis/make_figure_strategy.py  # the two figures
 ```
 
-Data is fetched, not committed (SqueezeMetrics' terms bar redistribution and price history is large): SqueezeMetrics GEX/DIX, CBOE VIX, yfinance SPY/VIXY/VIX-family, FRED DGS3MO. Window 2011-07 → 2026-05.
+Data is fetched, not committed (SqueezeMetrics' terms bar redistribution and price history is large): SqueezeMetrics GEX/DIX, CBOE VIX, yfinance SPY/VIXY/VIX-family, FRED DGS3MO. The fetcher pins the window end to the vintage behind the committed results (pass `--end` to extend) and records every file in `data/raw/deep_manifest.json`. Window 2011-07 → 2026-05.

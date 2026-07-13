@@ -42,8 +42,10 @@ def load_panel() -> pd.DataFrame:
         d["date"] = pd.to_datetime(d["date"])
         return d
 
-    spy = pq("data/raw/deep/SPY.parquet", ["date", "open", "high", "low", "close", "adj close", "volume"])
-    spy = spy.rename(columns={"adj close": "spy_adj", "close": "spy_close", "volume": "spy_vol"})
+    spy = pq("data/raw/deep/SPY.parquet",
+             ["date", "open", "high", "low", "close", "adj close", "adj_close", "volume"])
+    spy = spy.rename(columns={"adj close": "spy_adj", "adj_close": "spy_adj",
+                              "close": "spy_close", "volume": "spy_vol"})
     rv = daily_yang_zhang_rv(spy.rename(columns={"spy_close": "close"})[["date", "open", "high", "low", "close"]])
     spy = spy.merge(rv[["date", "rv"]], on="date", how="left")
 

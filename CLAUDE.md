@@ -15,6 +15,8 @@ Analyses run in the `trading` conda env (`python`; pyarrow/scikit-learn/scipy; s
 
 ```bash
 make install                 # pip install -e ".[dev]"
+make deep                    # fetch free deep-history inputs (yfinance/CBOE/FRED/SqueezeMetrics)
+                             # -> data/raw/deep/, manifest + VIXY split check. No charge.
 make test                    # pytest -q  (data-free; no-lookahead gate on synthetic panels)
 make lint                    # ruff check analysis tests
 make strategy                # STRATEGY.md backtest -> analysis/strategy_results.json
@@ -93,8 +95,16 @@ contract universe first, then pulls statistics against only the kept instrument_
 `data/raw/manifest.json` records every batch job (job_id, sha256, dates, sample-vs-full). Resume an
 in-flight job without re-charging via `python -m ingest.databento_pull --resume <JOB_ID> --name <hint>`.
 
-Free data (`yfinance` VIX/VIX9D/VIX3M/VVIX/SPY/VXX/VIXY and FRED `DGS3MO`) lands under
-`data/raw/yfinance/` and `data/raw/fred/` via separate pull scripts, driven by `configs/free_pulls.yaml`.
+Free data comes in two trees. The **flagship inputs** (STRATEGY.md + FINDINGS.md deep history) are
+fetched by `make deep` / `python -m ingest.deep_pull`: yfinance SPY/VIXY/VXX/SVXY/UVXY and
+VIX3M/VIX9D/VVIX into `data/raw/deep/`, FRED `DGS3MO` into `data/raw/fred/dgs3mo_deep.parquet`,
+CBOE `VIX_History.csv` into `data/raw/cboe_vix.csv`, and SqueezeMetrics DIX/GEX into
+`data/raw/squeeze_dix.csv` (personal-use fetch; if it 403s, download manually from
+squeezemetrics.com/monitor/dix). Every file's rows/dates/sha256 land in `data/raw/deep_manifest.json`;
+the default `--end` is pinned to the committed-results vintage; `--check` validates VIXY's
+split-adjusted series against VXX. The **21-month sub-study tree** (`yfinance` shallow pulls and FRED)
+lands under `data/raw/yfinance/` via `ingest/yfinance_pull.py` + `ingest/fred_pull.py`, driven by
+`configs/free_pulls.yaml`.
 
 ## Conventions
 

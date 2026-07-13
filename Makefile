@@ -1,7 +1,7 @@
 PY ?= python
 
 .PHONY: install test lint strategy findings figures notebook all clean \
-        quote sample data
+        deep quote sample data
 
 # ---------------------------------------------------------------- v2 deliverables ----
 install:                        ## editable install + dev tools (pytest, ruff)
@@ -31,6 +31,9 @@ all: findings strategy figures notebook test   ## regenerate the whole v2 delive
 
 # ---------------------------------------------------------------- data ingest ----
 # (free data is fetched, not committed; the 21-month OPRA sub-study used the Databento flow below)
+deep:                           ## free deep-history inputs behind STRATEGY.md/FINDINGS.md (no charge)
+	$(PY) -m ingest.deep_pull
+	$(PY) -m ingest.deep_pull --check
 quote:                          ## dry-run Databento cost estimate (no charge)
 	$(PY) -m ingest.databento_pull --quote configs/databento_pulls.yaml
 

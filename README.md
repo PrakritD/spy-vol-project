@@ -44,13 +44,14 @@ Both deliverables are built to make the result trustworthy whether it is large o
 ```bash
 make install        # editable install + dev tools (pandas/numpy/scipy/scikit-learn/pyarrow/matplotlib)
 make test           # data-free test suite (no-lookahead gate on synthetic panels); also runs in CI
+make deep           # fetch the free inputs (yfinance, CBOE, FRED, SqueezeMetrics) + validate VIXY splits
 make strategy       # VRP-carry backtest + robustness -> analysis/strategy_results.json
 make findings       # deep-history gamma study + robustness decomposition
 make figures        # regenerate the committed figures
 make all            # everything above + execute the walkthrough notebook
 ```
 
-The notebook **[`notebooks/strategy_walkthrough.ipynb`](notebooks/strategy_walkthrough.ipynb)** renders on GitHub and re-runs from committed, ToS-clean artifacts, so it needs no licensed data. The `make strategy`/`make findings` targets do need the free data present; their fetchers download it into the git-ignored `data/` tree. Raw data is fetched, not committed, because SqueezeMetrics' terms bar redistribution and price history is large.
+The notebook **[`notebooks/strategy_walkthrough.ipynb`](notebooks/strategy_walkthrough.ipynb)** renders on GitHub and re-runs from committed, ToS-clean artifacts, so it needs no licensed data. The `make strategy`/`make findings` targets need the free data present first: `make deep` fetches all of it (yfinance prices, CBOE VIX history, FRED rates, SqueezeMetrics GEX/DIX) into the git-ignored `data/` tree, records every file's row count and sha256 in `data/raw/deep_manifest.json`, and cross-validates VIXY's reverse-split-adjusted series against VXX. The window end is pinned to the vintage behind the committed results, so a fresh clone reproduces the headline numbers. Raw data is fetched, not committed, because SqueezeMetrics' terms bar redistribution and price history is large.
 
 ## License
 
