@@ -15,6 +15,11 @@ __pycache__/
 .env
 .envrc
 secrets/
+.claude/settings.local.json
+
+# local working notes; never publish
+improvement-plan.md
+v1-writeup.md
 
 **/_build/
 report/*.pdf
