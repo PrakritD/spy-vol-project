@@ -1,7 +1,7 @@
 PY ?= python
 
 .PHONY: install test lint strategy findings figures notebook all clean \
-        deep quote sample data
+        deep quote sample data log
 
 # ---------------------------------------------------------------- v2 deliverables ----
 install:                        ## editable install + dev tools (pytest, ruff)
@@ -28,6 +28,9 @@ notebook:                       ## execute the narrative walkthrough in-place (e
 	$(PY) -m nbconvert --to notebook --execute --inplace notebooks/strategy_walkthrough.ipynb
 
 all: findings strategy figures notebook test   ## regenerate the whole v2 deliverable from scratch
+
+log:                             ## append today's close to the live paper-trade log (idempotent)
+	$(PY) analysis/paper_log.py
 
 # ---------------------------------------------------------------- data ingest ----
 # (free data is fetched, not committed; the 21-month OPRA sub-study used the Databento flow below)

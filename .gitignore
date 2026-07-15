@@ -37,3 +37,6 @@ repo/
 
 # committable, ToS-clean dashboard curves (public VIX/VIXY/SPY-derived only)
 !analysis/strategy_curves.csv
+
+# committable, ToS-clean live paper-trade log (public VIX/VIX3M/VIXY-derived only)
+!analysis/paper_log.csv
