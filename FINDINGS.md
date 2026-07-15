@@ -1,6 +1,6 @@
 # Does Dealer Gamma Carry Volatility Information Beyond VIX?
 
-**Result.** Dealer gamma tracks realized volatility strongly: short-gamma days carry far higher RV (Welch t ≈ +28 over 15 years). But almost all of that is already in VIX. On a calm 21-month options window the residual beyond a VIX/HAR baseline is undetectable, a clean null across six pre-registered formulations. On 15 years spanning real stress regimes, a small, statistically robust, gamma-specific increment survives: gamma-only Diebold-Mariano on CRPS **p = 0.001**, ΔAUC **p = 0.001**. The increment is genuinely *gamma* (the DIX flow signal that ships alongside it adds nothing), it survives a richer VIX baseline rather than proxying a stale VIX, and it is economically small. Finding it at all took statistical power, multiple regimes, and a confound check.
+**Result.** Dealer gamma tracks realized volatility strongly: short-gamma days carry far higher RV (Welch t ≈ +28 over 15 years). But almost all of that is already in VIX: a variance decomposition puts **97.8%** of gamma's own explanatory power for log-RV inside a VIX/HAR baseline, leaving a 2.2% incremental sliver. On a calm 21-month options window that residual is undetectable, a clean null across six pre-registered formulations. On 15 years spanning real stress regimes, a small, statistically robust, gamma-specific increment survives: gamma-only Diebold-Mariano on CRPS **p = 0.001** (Clark-West, the correct test for this nested comparison, agrees at **p < 0.001**), ΔAUC **p = 0.001**. The increment is genuinely *gamma*, not the DIX flow signal that ships alongside it (adding DIX on top of gamma dilutes rather than helps, p = 0.006 vs 0.001), it survives a richer VIX baseline rather than proxying a stale VIX, and it is economically small. Finding it at all took statistical power, multiple regimes, and a confound check.
 
 Runnable evidence is in `analysis/`. This is the signal investigation behind one of the inputs to the strategy in [`STRATEGY.md`](STRATEGY.md).
 
@@ -31,7 +31,7 @@ SqueezeMetrics' `gex` is negative on **9.1%** of the deep window (~345 short-gam
 - **Contamination-fixed target**: RV regime versus a baseline ending at `t−1`, excluding the present value, so the comparison cannot leak the day it is being measured against.
 - **Pre-registration** of every mechanism-derived formulation, and strict no-lookahead (predictors ≤ `t−1`, gamma lagged for OCC's T-1 open interest).
 - **Out-of-sample expanding walk-forward** (~2y initial train, ~3,200 OOS days).
-- **The right test**: a **Diebold-Mariano test on the CRPS differential** of *nested* models (VIX/HAR versus +gamma), with Newey-West HAC and the Harvey small-sample correction; binary targets via OOS log-loss and AUC with a stationary block-bootstrap.
+- **The right test**: a **Diebold-Mariano test on the CRPS differential** of *nested* models (VIX/HAR versus +gamma), with Newey-West HAC and the Harvey small-sample correction, alongside a **Clark-West test** (the textbook correction for DM's conservative bias on nested models); binary targets via OOS log-loss and AUC with a stationary block-bootstrap. DM and the AUC bootstrap are two-sided tests of a one-sided (directional) hypothesis, "gamma helps"; CW is reported one-sided, as is standard for nested-model comparisons.
 - **Per-regime reporting**, never pooled across the 0DTE structural break (pre-2020 / 2020-21 / 2022+).
 - **Confound decomposition** separating gamma from DIX and from stale VIX, with multiplicity in view.
 
@@ -62,24 +62,26 @@ On 2024-08 → 2026-03 (415 days, one calm regime), gamma added nothing beyond V
 
 Incremental skill of gamma over a full VIX/HAR baseline, out-of-sample:
 
-| Block | n (OOS) | dCRPS | DM p | ΔAUC | AUC p | Verdict |
-|---|---|---|---|---|---|---|
-| **All** | 3,219 | +0.0020 | **0.006** | +0.007 | **0.003** | gamma helps |
-| pre-2020 | 1,617 | +0.0016 | 0.115 | +0.005 | 0.192 | null (positive) |
-| 2020–21 | 498 | +0.0022 | 0.229 | +0.009 | 0.108 | null (positive) |
-| 2022+ | 1,104 | +0.0024 | **0.021** | +0.007 | 0.067 | gamma helps |
+| Block | n (OOS) | dCRPS | DM p (2-sided) | CW p (1-sided) | ΔAUC | AUC p | Verdict |
+|---|---|---|---|---|---|---|---|
+| **All** | 3,219 | +0.0020 | **0.006** | **<0.001** | +0.007 | **0.003** | gamma helps |
+| pre-2020 | 1,617 | +0.0016 | 0.115 | **<0.001** | +0.005 | 0.192 | null (positive) |
+| 2020–21 | 498 | +0.0022 | 0.229 | **0.004** | +0.009 | 0.108 | null (positive) |
+| 2022+ | 1,104 | +0.0024 | **0.021** | **<0.001** | +0.007 | 0.067 | gamma helps |
+
+DM is the conservative test here: it does not credit the extra gamma parameters unless they clear a high bar, so a DM null (pre-2020, 2020-21) does not mean CW agrees. CW is one-sided by construction (it tests whether the larger model wins) and comes in stronger everywhere, exactly the pattern the DM-vs-CW literature predicts for a nested comparison.
 
 The **confound decomposition** is the critical check, because SqueezeMetrics ships gamma *and* DIX (a flow signal, not gamma):
 
-| Added to VIX/HAR | DM p | AUC p |
-|---|---|---|
-| **gamma only** (gex pct + neg-flag) | **0.001** | **0.001** |
-| DIX only | 0.97 | 0.78 |
-| gamma, over VIX **+ ΔVIX** baseline | **0.001** | 0.001 |
+| Added to VIX/HAR | DM p (2-sided) | CW p (1-sided) | AUC p |
+|---|---|---|---|
+| **gamma only** (gex pct + neg-flag) | **0.001** | **<0.001** | **0.001** |
+| DIX only | 0.97 (null) | **0.007** (significant) | 0.78 |
+| gamma, over VIX **+ ΔVIX** baseline | **0.001** | **<0.001** | 0.001 |
 
-The increment is gamma-specific (DIX adds nothing), it survives a richer VIX baseline rather than standing in for a stale VIX, it is positive in every regime block, and gamma-only is cleaner than gamma+DIX (p=0.001 vs 0.006, so DIX only dilutes the signal). At p=0.001 on two independent metrics over 3,219 OOS days, it survives generous multiple-testing correction across every test in this project.
+DIX-only is the one case where DM and CW disagree outright: DM calls it a clean null, CW calls it significant. This project does not resolve that disagreement in DIX's favor; both numbers are reported and DIX-only stays an open question rather than a settled null. It does not change the headline conclusion, which rests on DM (the primary test throughout this project) applied to the combination: gamma-only beats gamma+DIX on DM (p=0.001 vs 0.006), so adding DIX on top of gamma dilutes rather than helps. CW does not show the same ordering here (its statistic is marginally larger for gamma+DIX than gamma-only), which is expected: CW is known to reward added parameters somewhat regardless of true incremental value, which is exactly why it is used only to check that DM's conservatism is not hiding real gamma signal, not as the test for judging whether an addition helps. On the test built for that judgment, DIX adds nothing once gamma is already in the model.
 
-It is also small: dCRPS ≈ +0.002 on a baseline CRPS ≈ 0.22 (under 1% relative), ΔAUC ≈ +0.007. Gamma is ~95% a VIX echo, and the last sliver is real.
+It is also small: dCRPS ≈ +0.002 on a baseline CRPS ≈ 0.22 (under 1% relative), ΔAUC ≈ +0.007. A variance decomposition (`analysis/phase1_robustness.py`, in-sample R² of log-RV on gamma alone vs. on VIX/HAR vs. on both) puts **97.8%** of gamma's own explanatory power inside VIX/HAR (R² 0.307 → incremental R² 0.0067 once VIX/HAR is already in the model): gamma is almost entirely a VIX echo, and the last 2.2% is real.
 
 ![Deep-history result: a small but robust gamma-specific increment](analysis/figures/deep_history_result.png)
 

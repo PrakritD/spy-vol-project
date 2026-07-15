@@ -42,12 +42,30 @@ def _nw_var(d, lag):
 
 
 def dm_test(l0, l1, h=1):
+    """Diebold-Mariano on a loss differential. Two-sided p-value (the test has no notion of
+    direction); the project's hypothesis (gamma HELPS) is one-sided, see the CW note below."""
     d = l0 - l1; n = len(d)
     if n < 10:
         return d.mean(), np.nan, np.nan
     lag = max(1, int(round(n ** (1 / 3))))
     st = d.mean() / np.sqrt(_nw_var(d, lag)) * np.sqrt((n + 1 - 2 * h + h * (h - 1) / n) / n)
     return d.mean(), st, 2 * (1 - norm.cdf(abs(st)))
+
+
+def cw_test(y, pred0, pred1):
+    """Clark-West (2007) test for equal predictive accuracy of NESTED models. DM is biased toward
+    the null when the larger model's extra parameters are pure noise (it does not account for the
+    resulting positive-mean estimation-error term); CW subtracts that term before testing. Built
+    from the same point forecasts wf_ols_crps already returns, reusing the DM/NW variance
+    machinery above. One-sided: large positive CW favors the bigger (gamma) model."""
+    e0, e1 = y - pred0, y - pred1
+    f = e0 ** 2 - e1 ** 2 + (pred0 - pred1) ** 2
+    n = len(f)
+    if n < 10:
+        return f.mean(), np.nan, np.nan
+    lag = max(1, int(round(n ** (1 / 3))))
+    st = f.mean() / np.sqrt(_nw_var(f, lag))
+    return f.mean(), st, 1 - norm.cdf(st)   # one-sided upper tail (directional hypothesis)
 
 
 def wf_ols_crps(X, y, refit=REFIT_EVERY):
@@ -154,32 +172,38 @@ def main():
     base_f = ["har_d", "har_w", "har_m"] + vixf
     Xb, Xg = d[base_f].to_numpy(), d[base_f + gam].to_numpy()
     y = d["y"].to_numpy(); yb = d["y_bin"].to_numpy()
-    c0, _ = wf_ols_crps(Xb, y); c1, _ = wf_ols_crps(Xg, y)
+    c0, pred0 = wf_ols_crps(Xb, y); c1, pred1 = wf_ols_crps(Xg, y)
     p0 = wf_logit(Xb, yb); p1 = wf_logit(Xg, yb)
     oos = np.arange(TRAIN0, len(d))
     era_oos = d["era"].to_numpy()[oos]
     dates_oos = d["date"].to_numpy()[oos]
 
     print(f"\n=== incremental skill of gamma over VIX/HAR (OOS {pd.Timestamp(dates_oos[0]).date()} -> {pd.Timestamp(dates_oos[-1]).date()}, n={len(oos)}) ===")
-    print(f"{'block':10s} {'n':>5s} {'dCRPS':>9s} {'DM':>6s} {'p':>6s}   {'dAUC':>7s} {'p':>6s}   verdict")
+    print(f"{'block':10s} {'n':>5s} {'dCRPS':>9s} {'DM':>6s} {'p(2s)':>6s} {'CW':>6s} {'p(1s)':>6s}   {'dAUC':>7s} {'p':>6s}   verdict")
     for blk in ["ALL", "pre2020", "2020-21", "2022+"]:
         sel = np.ones(len(oos), bool) if blk == "ALL" else (era_oos == blk)
         cc0, cc1 = c0[oos][sel], c1[oos][sel]
         db, dm, pdm = dm_test(cc0, cc1)
+        _, cw, pcw = cw_test(y[oos][sel], pred0[oos][sel], pred1[oos][sel])
         a_obs, a_p = boot_p(yb[oos][sel], p0[oos][sel], p1[oos][sel], "auc")
         helps = (db > 0 and pdm < 0.05) or (a_obs > 0 and (a_p is not None and a_p < 0.05))
         hurts = (db < 0 and pdm < 0.05)
         v = "GAMMA HELPS" if helps else ("hurts(overfit)" if hurts else "null")
-        print(f"{blk:10s} {sel.sum():5d} {db:+9.5f} {dm:+6.2f} {pdm:6.3f}   {a_obs:+7.3f} {a_p if a_p is not None else float('nan'):6.3f}   {v}")
+        print(f"{blk:10s} {sel.sum():5d} {db:+9.5f} {dm:+6.2f} {pdm:6.3f} {cw:+6.2f} {pcw:6.3f}   "
+              f"{a_obs:+7.3f} {a_p if a_p is not None else float('nan'):6.3f}   {v}")
 
     print("\n=== VERDICT ===")
     db_all, dm_all, p_all = dm_test(c0[oos], c1[oos])
+    _, cw_all, pcw_all = cw_test(y[oos], pred0[oos], pred1[oos])
     if db_all > 0 and p_all < 0.05:
-        print(f"Gamma adds incremental skill over VIX/HAR on deep history (dCRPS={db_all:+.5f}, DM p={p_all:.3f}).")
+        print(f"Gamma adds incremental skill over VIX/HAR on deep history (dCRPS={db_all:+.5f}, DM p={p_all:.3f}, CW p={pcw_all:.3f}).")
     else:
-        print(f"NULL on deep history: gamma adds no incremental skill over VIX/HAR (dCRPS={db_all:+.5f}, DM p={p_all:.3f}).")
+        print(f"NULL on deep history: gamma adds no incremental skill over VIX/HAR (dCRPS={db_all:+.5f}, DM p={p_all:.3f}, CW p={pcw_all:.3f}).")
     print("Per-block results above are the real test — look for a stress-regime (2020-21 / 2022+) effect "
           "that the calm 21-month window could not see. Multiple blocks => read with multiplicity in mind.")
+    print("NOTE: DM and the AUC bootstrap are two-sided tests of the DIRECTIONAL hypothesis 'gamma helps'; "
+          "CW is reported one-sided (as is standard for nested models) because DM is conservative here: "
+          "the extra gamma parameters bias DM toward the null even when they carry real signal.")
     print(f"NOTE: ~15y, real regimes, %neg-gamma={d['gex_neg'].mean()*100:.1f}%. This is the powered test; "
           "a null here is far more conclusive than the 21-month null.")
 
