@@ -61,7 +61,7 @@ make figures        # regenerate the committed figures
 make all            # everything above + execute the walkthrough notebook
 ```
 
-The notebook **[`notebooks/strategy_walkthrough.ipynb`](notebooks/strategy_walkthrough.ipynb)** renders on GitHub and re-runs from committed, ToS-clean artifacts, so it needs no licensed data. The `make strategy`/`make findings` targets need the free data present first: `make deep` fetches all of it into the git-ignored `data/` tree, records every file's row count and sha256 in `data/raw/deep_manifest.json`, and cross-validates VIXY's reverse-split-adjusted series against VXX. The window end is pinned to the vintage behind the committed results, so a fresh clone reproduces the headline numbers. Raw data is fetched, not committed, because SqueezeMetrics' terms bar redistribution and price history is large.
+The notebook **[`notebooks/strategy_walkthrough.ipynb`](notebooks/strategy_walkthrough.ipynb)** renders on GitHub and re-runs from committed, ToS-clean artifacts, so it needs no licensed data. The `make strategy`/`make findings` targets need the free data present first: `make deep` fetches all of it into the git-ignored `data/` tree, records every file's row count and sha256 in `data/raw/deep_manifest.json`, and cross-validates VIXY's reverse-split-adjusted series against VXX. The window end is pinned to the vintage behind the committed results, so a fresh clone reproduces the headline numbers. Raw data is fetched, not committed, because SqueezeMetrics' terms bar redistribution and price history is large. [`requirements-lock.txt`](requirements-lock.txt) pins the exact environment that produced the committed numbers, for byte-for-byte reproduction beyond `pyproject.toml`'s version ranges.
 
 ## License
 
