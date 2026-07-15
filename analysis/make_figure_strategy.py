@@ -133,3 +133,70 @@ fig.text(0.5, -0.04,
 fig.tight_layout()
 fig.savefig(f"{FIG}/strategy_research.png", dpi=150, bbox_inches="tight")
 print("wrote", f"{FIG}/strategy_research.png")
+
+# =================== FIGURE 3: rolling 3y Sharpe / Calmar stability ===================
+WIN = 756  # ~3 trading years
+
+
+def recover_returns(equity: pd.Series) -> np.ndarray:
+    """Same convention as the notebook reconciliation cell: curve base = 1.0."""
+    e = equity.to_numpy()
+    return e / np.concatenate([[1.0], e[:-1]]) - 1.0
+
+
+def rolling_sharpe(r: np.ndarray, win: int) -> np.ndarray:
+    s = pd.Series(r)
+    return (s.rolling(win).mean() / s.rolling(win).std() * np.sqrt(252)).to_numpy()
+
+
+def _window_calmar(w: np.ndarray) -> float:
+    e = np.cumprod(1 + w)
+    mdd = (e / np.maximum.accumulate(e) - 1.0).min()
+    cagr = e[-1] ** (252 / len(w)) - 1.0
+    return cagr / abs(mdd) if mdd < 0 else np.nan
+
+
+def rolling_calmar(r: np.ndarray, win: int) -> np.ndarray:
+    return pd.Series(r).rolling(win).apply(_window_calmar, raw=True).to_numpy()
+
+
+r_carry_full = recover_returns(eq["carry"])
+r_spyx_full = recover_returns(eq["spy_excess"])
+roll_sh_carry = rolling_sharpe(r_carry_full, WIN)
+roll_sh_spyx = rolling_sharpe(r_spyx_full, WIN)
+roll_cal_carry = rolling_calmar(r_carry_full, WIN)
+roll_cal_spyx = rolling_calmar(r_spyx_full, WIN)
+
+fig, (axS, axC) = plt.subplots(1, 2, figsize=(13, 5))
+axS.plot(eq["date"], roll_sh_carry, color=GREEN, lw=1.6, label="VRP carry")
+axS.plot(eq["date"], roll_sh_spyx, color=GREY, lw=1.2, alpha=0.85, label="SPY (excess)")
+axS.axhline(0, color="k", lw=0.8)
+axS.set_ylabel("rolling 3y Sharpe"); axS.set_title("Rolling 3-year Sharpe: the edge is\nregime-dependent, not a constant", fontsize=10.5)
+axS.legend(fontsize=8.5, loc="upper right"); axS.grid(alpha=0.25)
+
+axC.plot(eq["date"], roll_cal_carry, color=GREEN, lw=1.6, label="VRP carry")
+axC.plot(eq["date"], roll_cal_spyx, color=GREY, lw=1.2, alpha=0.85, label="SPY (excess)")
+axC.axhline(0, color="k", lw=0.8)
+axC.set_ylabel("rolling 3y Calmar"); axC.set_title("Rolling 3-year Calmar: carry beats SPY in\njust over half of 3y windows, not every one", fontsize=10.5)
+axC.legend(fontsize=8.5, loc="upper right"); axC.grid(alpha=0.25)
+
+fig.suptitle("Stability check: 756-day (3y) rolling Sharpe and Calmar, carry vs SPY excess", fontsize=12, y=1.02)
+fig.tight_layout()
+fig.savefig(f"{FIG}/strategy_rolling.png", dpi=150, bbox_inches="tight")
+print("wrote", f"{FIG}/strategy_rolling.png")
+
+valid_sh = roll_sh_carry[~np.isnan(roll_sh_carry)]
+valid_cal_c = roll_cal_carry[~np.isnan(roll_cal_carry)]
+valid_cal_s = roll_cal_spyx[~np.isnan(roll_cal_spyx)]
+n_common = min(len(valid_cal_c), len(valid_cal_s))
+rolling_summary = {
+    "window_days": WIN,
+    "n_windows": int(len(valid_sh)),
+    "rolling_sharpe_carry": {"min": float(valid_sh.min()), "median": float(np.median(valid_sh)),
+                              "max": float(valid_sh.max()),
+                              "pct_positive": float((valid_sh > 0).mean())},
+    "rolling_calmar_carry_gt_spy_pct": float((valid_cal_c[-n_common:] > valid_cal_s[-n_common:]).mean()),
+}
+with open(f"{REPO}/analysis/rolling_metrics_results.json", "w") as f:
+    json.dump(rolling_summary, f, indent=2)
+print("wrote", f"{REPO}/analysis/rolling_metrics_results.json")

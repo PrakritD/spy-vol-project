@@ -123,7 +123,7 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 
   The realistic next-open fill leaves the return engine intact and pays in drawdown: exits hold the short through one overnight gap, and VIXY gaps hardest on exactly the nights the curve inverts (the Feb 1–15, 2018 window costs −1.8% at the close print and −8.8% under a full extra day of lag). The signal itself is stable at the 4:00pm cutoff: of ~12.5 flips per year, ~3.6 sit within 1% of the contango boundary. Roughly a quarter of the headline drawdown advantage is fill convention, which is why the depth claim is quoted against the next-open row as well (−20% remains well under SPY's −34%).
 
-- **Deflated Sharpe = 0.66–0.81** (N=22 variants). The lower bound uses the empirical Sharpe dispersion across a genuinely diverse trial set; the upper bound uses the theory-grounded Bailey–López-de-Prado per-trial null. A DSR comfortably above 0.5 across that range is the selection-aware bar the strategy clears.
+- **Deflated Sharpe = 0.66–0.81** (N=22 variants). The lower bound uses the empirical Sharpe dispersion across a genuinely diverse trial set; the upper bound uses the theory-grounded Bailey–López-de-Prado per-trial null. A DSR comfortably above 0.5 across that range is the selection-aware bar the strategy clears. Holding that same dispersion fixed and asking what the bar would be under more trials than were actually run: 0.51–0.72 at a hypothetical N=50 and 0.38–0.63 at N=100. The theory-grounded (H0) estimate stays above 0.5 out to 10x the trials actually tried; the empirical-dispersion estimate does not, dropping below 0.5 by N=100. The conclusion is not an unqualified order-of-magnitude-robust result, it depends on which dispersion estimate is trusted, and the empirical one is more conservative here.
 
 - **Block-bootstrap 95% CI on Sharpe: [+0.27, +1.20]; P(Sharpe ≤ 0) = 0.001.** This is significance versus zero with no multiple-testing adjustment; the selection-aware bar is the DSR above.
 
@@ -137,13 +137,23 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   | 2019–2026 | +0.67 (t=2.1) | 0.60 | −13% | 0.80 |
   | 2018+ (post-XIV) | +0.50 (t=1.6) | 0.37 | −15% | 0.68 |
 
-  The edge roughly halves after 2018 (post-XIV, post-0DTE) but stays positive, and a forward-looking reader should anchor on the recent-regime Sharpe of ~0.50, not the pooled 0.74.
+  The edge roughly halves after 2018 (post-XIV, post-0DTE) but stays positive, and a forward-looking reader should anchor on the recent-regime Sharpe of ~0.50, not the pooled 0.74. A rolling 756-day (3y) view tells the same story continuously rather than at three fixed cut points ([`analysis/make_figure_strategy.py`](analysis/make_figure_strategy.py), `strategy_rolling.png`): the rolling Sharpe never goes negative across 2,976 windows (min 0.00, median 0.76), but the rolling Calmar only clears SPY's rolling Calmar in 54% of windows, so the Calmar edge is a persistent tilt, not a reliable win in every 3-year stretch.
 
 - **Per-regime significance.** With HAC t-stats and a 3-block multiplicity caveat: pre-2020 Sharpe +0.81 (t=2.52, significant); 2020–21 +0.83 (t=1.42, not significant, n=505); 2022+ +0.57 (t=1.35, not significant). The positive 2020–21 and 2022+ point estimates collapse toward their minus-top-3-days figures (+0.59, +0.42) and should not be read as robust on their own.
 
 - **Threshold stability.** Across contango thresholds 0.97–1.05 the Sharpe spans 0.56–0.77, all positive; the structural `1.00` gives 0.74 and is not the grid maximum (1.05 → 0.77), so it is not cherry-picked.
 
 - **Few-days fragility.** Sharpe minus the single best day is 0.73, minus top-5 is 0.67, minus top-10 is 0.61. The result is not a handful of lucky sessions.
+
+- **Capacity.** A flip trades the whole 0.2x book (`analysis/capacity.py` -> `capacity_results.json`); VIXY's typical dollar ADV (full-sample median of the 21-day rolling median) is ~$46.5M, most recently ~$80.6M:
+
+  | Book size | Flip trade | % of typical ADV | % of recent ADV |
+  |---|---|---|---|
+  | $1M | $200K | 0.43% | 0.25% |
+  | $10M | $2M | 4.30% | 2.48% |
+  | $50M | $10M | 21.50% | 12.41% |
+
+  At ~12.5 flips/yr a $1–10M book is a rounding error on VIXY's tape; a $50M book starts to move the market on flip days, and VIXY is a note, not a future, so its own liquidity caps how much of this can be run in this vehicle at all. That, together with the borrow drag above, is why a futures-level implementation (the SPVXSTR roll, §6/§7) is the version that scales, not this ETF proxy. VIXY is also chronically hard to borrow, and locate availability tends to tighten exactly when the trade wants to be on (into a vol spike), which is a qualitative risk this backtest cannot size from free data.
 
 - **Data staleness and margin.** The contango flag is never computed from a stale print: in the current data vintage VIX3M is present on every panel day (zero forward-filled observations; VVIX needs 8). Shorting VIXY draws elevated house margin, often 100% of notional or more, but at the 0.2x book used here the position is comfortably financeable; the binding cost is borrow, not margin.
 
@@ -174,7 +184,8 @@ python analysis/strategy_two_sleeve.py   # full backtest + tables -> strategy_re
 python analysis/execution_lag.py         # fill-convention sensitivity -> execution_lag_results.json
 python analysis/factor_regression.py     # CAPM/FF6, state betas, co-drawdowns -> factor_regression_results.json
 python analysis/drawdown_inference.py    # paired bootstrap on the drawdown edge -> drawdown_inference_results.json
-python analysis/make_figure_strategy.py  # the two figures
+python analysis/capacity.py              # flip size vs VIXY dollar ADV -> capacity_results.json
+python analysis/make_figure_strategy.py  # the three figures (headline, research, rolling)
 ```
 
 Data is fetched, not committed (SqueezeMetrics' terms bar redistribution and price history is large): SqueezeMetrics GEX/DIX, CBOE VIX, yfinance SPY/VIXY/VIX-family, FRED DGS3MO. The fetcher pins the window end to the vintage behind the committed results (pass `--end` to extend) and records every file in `data/raw/deep_manifest.json`. Window 2011-07 → 2026-05.

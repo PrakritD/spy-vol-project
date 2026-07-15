@@ -1,0 +1,11 @@
+{
+  "window_days": 756,
+  "n_windows": 2976,
+  "rolling_sharpe_carry": {
+    "min": 0.00040707003892526095,
+    "median": 0.7565998137611911,
+    "max": 1.4145771392680497,
+    "pct_positive": 1.0
+  },
+  "rolling_calmar_carry_gt_spy_pct": 0.5413306451612904
+}

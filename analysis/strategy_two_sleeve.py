@@ -601,6 +601,17 @@ def main():
           f"An all-clones std would inflate this to ~0.98 — we DON'T cite that.")
     print(f"  fragility: Sharpe minus top-1={s1:+.2f}  top-5={s5:+.2f}  top-10={s10:+.2f}")
 
+    # DSR-over-N: hold the trial-dispersion (std_emp/std_h0) fixed and ask how the deflation bar
+    # moves if selection had run over more trials than the N=22 actually tried (a stress test on
+    # the DSR conclusion, not a claim that more trials were run).
+    dsr_over_n = {}
+    for n in (22, 50, 100):
+        e = deflated_sharpe(r_carry, n, std_emp)["dsr"]
+        h = deflated_sharpe(r_carry, n, std_h0)["dsr"]
+        dsr_over_n[n] = {"diverse_std": e, "h0_std": h, "range": [min(e, h), max(e, h)]}
+    print("  DSR over N (same dispersion, hypothetical trial count): " + " ".join(
+        f"N={n}: {v['range'][0]:.2f}-{v['range'][1]:.2f}" for n, v in dsr_over_n.items()))
+
     # =========================== OOS SUB-PERIOD SPLIT (carry is parameter-light, but show persistence) ===========================
     print("\n--- OUT-OF-SAMPLE PERSISTENCE (sub-period splits; edge halves post-2018 but stays positive) ---")
     splits = [("2011-2018", "2011-01-01", "2019-01-01"), ("2019-2026", "2019-01-01", "2027-01-01"),
@@ -678,7 +689,8 @@ def main():
         "sharpe_parity_break_borrow": float(cross),
         "dsr": {"range": [min(dsr_emp["dsr"], dsr_h0["dsr"]), max(dsr_emp["dsr"], dsr_h0["dsr"])],
                 "dsr_diverse_std": dsr_emp["dsr"], "dsr_h0_std": dsr_h0["dsr"], "n_trials": int(n_trials),
-                "std_diverse": std_emp, "std_h0": std_h0, "note": "all-clones std would give ~0.98; not cited"},
+                "std_diverse": std_emp, "std_h0": std_h0, "note": "all-clones std would give ~0.98; not cited",
+                "dsr_over_n": {str(n): v for n, v in dsr_over_n.items()}},
         "bootstrap_ci_vs0": [lo, hi, pneg], "fragility": {"minus_top1": s1, "minus_top5": s5, "minus_top10": s10},
         "threshold_sweep": {f"{t:.2f}": metrics(s, dates)["sharpe"] for t, s in thr_streams.items()},
         "subperiods": {nm: {"sharpe": sub[nm]["sharpe"], "t_hac": sub[nm]["t_hac"],

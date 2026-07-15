@@ -1,0 +1,29 @@
+{
+  "note": "adjusted-close x share volume is an approximation for dollar ADV (no VWAP data free)",
+  "vixy_dollar_adv": {
+    "typical_21d_median": 46516190.32009888,
+    "most_recent_21d_median": 80571078.4538269
+  },
+  "flip_fraction_of_book": 0.2,
+  "flips_per_year": 12.4953095684803,
+  "capacity_table": [
+    {
+      "book_usd": 1000000,
+      "flip_trade_usd": 200000.0,
+      "flip_pct_of_typical_adv": 0.004299578246277475,
+      "flip_pct_of_recent_adv": 0.0024822802901243845
+    },
+    {
+      "book_usd": 10000000,
+      "flip_trade_usd": 2000000.0,
+      "flip_pct_of_typical_adv": 0.04299578246277475,
+      "flip_pct_of_recent_adv": 0.024822802901243845
+    },
+    {
+      "book_usd": 50000000,
+      "flip_trade_usd": 10000000.0,
+      "flip_pct_of_typical_adv": 0.21497891231387375,
+      "flip_pct_of_recent_adv": 0.12411401450621923
+    }
+  ]
+}
