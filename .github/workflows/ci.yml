@@ -22,3 +22,17 @@ jobs:
         run: ruff check analysis tests
       - name: Test (data-free; the no-lookahead gate runs on synthetic panels)
         run: pytest -q
+
+  notebook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install (adds nbconvert; the notebook reads only committed artifacts, no data pull)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,notebook]"
+      - name: Execute the walkthrough notebook in place
+        run: make notebook
