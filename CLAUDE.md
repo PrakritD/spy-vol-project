@@ -24,7 +24,7 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | `analysis/phase1_*.py` | the FINDINGS deep-history signal study and its confound decomposition |
 | `analysis/strategy_results.json` | the single source of every number quoted in STRATEGY.md |
 | `analysis/strategy_curves.csv` | committed, ToS-clean equity curves; the notebook's only data input |
-| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–5 |
+| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py`, `cross_vehicle.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–5 |
 | `analysis/forecast_bench.py` | FORECASTING.md's walk-forward ML benchmark (HAR/HAR+VIX vs quantile GBM/MLP); writes `forecast_bench_results.json` |
 | `analysis/paper_log.py` | live paper-trade log; appends one row/session to committed `paper_log.csv` |
 | `ingest/deep_pull.py` | fetches every flagship data input; manifest in `data/raw/deep_manifest.json` |

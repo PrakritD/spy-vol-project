@@ -155,6 +155,36 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 
   At ~12.5 flips/yr a $1–10M book is a rounding error on VIXY's tape; a $50M book starts to move the market on flip days, and VIXY is a note, not a future, so its own liquidity caps how much of this can be run in this vehicle at all. That, together with the borrow drag above, is why a futures-level implementation (the SPVXSTR roll, §6/§7) is the version that scales, not this ETF proxy. VIXY is also chronically hard to borrow, and locate availability tends to tighten exactly when the trade wants to be on (into a vol spike), which is a qualitative risk this backtest cannot size from free data.
 
+- **Cross-vehicle generalization.** The same zero-parameter rule, unmodified, run on three other
+  vol ETPs at the identical 0.20 notional ([`analysis/cross_vehicle.py`](analysis/cross_vehicle.py)):
+
+  | Vehicle | Window | Sharpe | Calmar | maxDD |
+  |---|---|---|---|---|
+  | VIXY (headline) | 2011–2026 | 0.74 | 0.56 | −15.3% |
+  | VXX (short) | 2018–2026 | 0.53 | 0.38 | −15.5% |
+  | VIXY, same window as VXX | 2018–2026 | 0.51 | 0.37 | −15.3% |
+  | SVXY (long, no borrow), pooled | 2011–2026 | 0.74 | 0.56 | −11.5% |
+  | SVXY, pre deleverage (−1x) | 2011–2018-02 | 1.01 | 1.00 | −11.5% |
+  | SVXY, post deleverage (−0.5x) | 2018-02–2026 | 0.45 | 0.32 | −8.3% |
+  | UVXY (short, 2x) | 2011–2026 | 0.86 | 0.76 | −22.2% |
+
+  VXX (the relaunched note, 2018→ only) tracks VIXY closely over the identical dates: both
+  sit around Sharpe 0.5 in this lower-Sharpe post-2018 sub-period, and VXX's maxDD is
+  marginally worse (−15.5% vs −15.3%), consistent with the two products sharing the same
+  underlying VIX-futures roll with small fee/methodology differences. SVXY, going long in
+  contango, needs no borrow at all, which answers the "why pay borrow shorting a hard-to-
+  borrow ETF" question directly: over 2011–2018 (still −1x) it actually posts the strongest
+  numbers in the table (Sharpe 1.01, Calmar 1.00), but ProShares' February 2018 deleverage to
+  −0.5x roughly halves both Sharpe and Calmar for the second half of the sample. The two
+  periods are never pooled into one claim because they are different products in substance,
+  a −1x fund before 2018-02-28 and a −0.5x fund after. UVXY's 2x leverage cuts the other way:
+  it posts the best Sharpe and Calmar of any vehicle in the table, but by far the worst
+  drawdown (−22.2%, well past the −15.3% headline and the −20.1% next-open-fill number in the
+  execution-lag row above), the leverage-decay-and-tail tradeoff showing up exactly where it
+  should. None of this is borrow-free ETF alchemy: VIXY and VXX both pay the SAME borrow
+  drag documented above, and SVXY's own -0.5x-fund NAV decay is a real cost baked into its
+  price rather than a borrow line item, just a differently-shaped one.
+
 - **Data staleness and margin.** The contango flag is never computed from a stale print: in the current data vintage VIX3M is present on every panel day (zero forward-filled observations; VVIX needs 8). Shorting VIXY draws elevated house margin, often 100% of notional or more, but at the 0.2x book used here the position is comfortably financeable; the binding cost is borrow, not margin.
 
 ## 6. Limitations
