@@ -8,8 +8,10 @@ A short-volatility **VRP-carry strategy** on SPY (`STRATEGY.md`, the flagship: s
 `VIX < VIX3M`, flat otherwise; Sharpe 0.74, Calmar 0.56, maxDD −15%; the durable edge is drawdown
 control, not a Sharpe beat) plus the signal investigation behind one candidate input
 (`FINDINGS.md`: dealer gamma is almost entirely a VIX echo, with a small, robust, economically
-marginal increment on deep history). Design notes, data-flow detail, and the reasoning behind
-both live in `docs/ARCHITECTURE.md`; read it before structural changes.
+marginal increment on deep history) plus a standalone ML forecasting benchmark
+(`FORECASTING.md`: quantile gradient boosting beats a VIX-augmented HAR baseline on next-day RV
+CRPS; a small MLP on the same features does not). Design notes, data-flow detail, and the
+reasoning behind all three live in `docs/ARCHITECTURE.md`; read it before structural changes.
 
 Analyses run in the `trading` conda env (`python`; pyarrow/scikit-learn/scipy; statsmodels is
 absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed (vendor ToS).
@@ -23,6 +25,8 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | `analysis/strategy_results.json` | the single source of every number quoted in STRATEGY.md |
 | `analysis/strategy_curves.csv` | committed, ToS-clean equity curves; the notebook's only data input |
 | `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–5 |
+| `analysis/forecast_bench.py` | FORECASTING.md's walk-forward ML benchmark (HAR/HAR+VIX vs quantile GBM/MLP); writes `forecast_bench_results.json` |
+| `analysis/paper_log.py` | live paper-trade log; appends one row/session to committed `paper_log.csv` |
 | `ingest/deep_pull.py` | fetches every flagship data input; manifest in `data/raw/deep_manifest.json` |
 | `docs/ARCHITECTURE.md` | data flow, no-lookahead invariants, GEX convention, Databento pull detail, design principles |
 | `tests/test_strategy.py` | the no-lookahead perturbation gates, golden metric values, pinned synthetic headline |
@@ -38,9 +42,11 @@ make test                    # pytest -q  (data-free; no-lookahead gate on synth
 make lint                    # ruff check analysis tests
 make strategy                # STRATEGY.md backtest -> analysis/strategy_results.json
 make findings                # FINDINGS.md deep-history + robustness
+make forecast                # FORECASTING.md walk-forward ML benchmark -> analysis/forecast_bench_results.json
 make figures                 # regenerate committed figures
 make notebook                # execute notebooks/strategy_walkthrough.ipynb in place
-make all                     # findings + strategy + figures + notebook + test
+make log                     # append today's close to the live paper-trade log (idempotent)
+make all                     # findings + strategy + forecast + figures + notebook + test
 ```
 
 Databento ingest is gated to prevent accidental spend (`make quote` estimates cost with no

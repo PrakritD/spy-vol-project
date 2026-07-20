@@ -20,11 +20,13 @@ The rule itself is one line, and no parameter in it was fit on this sample: **sh
 
 ![Headline dashboard](analysis/figures/strategy_headline.png)
 
-## The two deliverables
+## The three deliverables
 
 1. **[`STRATEGY.md`](STRATEGY.md), the strategy.** The contango-filtered VRP carry above. The construction ladder in §4 isolates where the risk-adjusted return comes from: the term-structure filter more than doubles Calmar (0.23 → 0.56) and halves drawdown (−32% → −15%) by being absent during the regime that produces the losses. Full attribution, cost and borrow stress, and per-regime robustness inside.
 
 2. **[`FINDINGS.md`](FINDINGS.md), the signal investigation.** Does dealer gamma carry next-day realized-volatility information beyond VIX? Mostly not: gamma is almost entirely a VIX echo, a clean null on a calm 21-month options window. But on 15 years across real stress regimes there is a small, statistically robust, gamma-specific increment over a full VIX/HAR baseline (Diebold-Mariano on CRPS, **p = 0.001**). The increment is real and economically marginal, which is why §4b of the strategy finds gamma adds nothing once VIX is already in the model.
+
+3. **[`FORECASTING.md`](FORECASTING.md), the ML benchmark.** Every ML component inside STRATEGY.md is a null; this asks the fair-shot question directly: can ML beat a strong classical baseline at forecasting next-day realized volatility? A walk-forward quantile gradient boosting model beats a VIX-augmented HAR baseline on CRPS by 2.9% (**p = 6.7 × 10⁻⁵**); a small MLP on the same features does not (3.5% worse, **p = 2.0 × 10⁻⁴**). Both results are reported with the same prominence.
 
 ![Deep-history result](analysis/figures/deep_history_result.png)
 
@@ -42,8 +44,8 @@ Both deliverables are built so the result can be trusted whether it is large, sm
 
 | Path | What |
 |---|---|
-| `analysis/` | the deliverables: `strategy_two_sleeve.py` (strategy), `phase1_*` (deep-history signal study), `make_figure_*` |
-| `STRATEGY.md` / `FINDINGS.md` | the two write-ups |
+| `analysis/` | the deliverables: `strategy_two_sleeve.py` (strategy), `phase1_*` (deep-history signal study), `forecast_bench.py` (ML forecasting benchmark), `make_figure_*` |
+| `STRATEGY.md` / `FINDINGS.md` / `FORECASTING.md` | the three write-ups |
 | `notebooks/strategy_walkthrough.ipynb` | a rendered, re-runnable narrative tying both together |
 | `features/`, `ingest/`, `configs/` | feature engineering, the free-data fetchers, and the two-stage Databento OPRA pull |
 | `tests/` | data-free test suite; the no-lookahead gate runs on synthetic panels, green in CI |
@@ -57,6 +59,7 @@ make test           # data-free test suite (no-lookahead gate on synthetic panel
 make deep           # fetch the free inputs (yfinance, CBOE, FRED, SqueezeMetrics) + validate VIXY splits
 make strategy       # VRP-carry backtest + robustness -> analysis/strategy_results.json
 make findings       # deep-history gamma study + robustness decomposition
+make forecast       # walk-forward ML forecasting benchmark -> analysis/forecast_bench_results.json
 make figures        # regenerate the committed figures
 make log            # append today's close to the live paper-trade log (idempotent)
 make all            # everything above + execute the walkthrough notebook

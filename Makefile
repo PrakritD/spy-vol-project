@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: install test lint strategy findings figures notebook all clean \
+.PHONY: install test lint strategy findings forecast figures notebook all clean \
         deep quote sample data log
 
 # ---------------------------------------------------------------- v2 deliverables ----
@@ -20,14 +20,18 @@ findings:                       ## FINDINGS.md: deep-history gamma study + robus
 	$(PY) analysis/phase1_deep_history.py
 	$(PY) analysis/phase1_robustness.py
 
+forecast:                       ## FORECASTING.md: walk-forward ML benchmark -> analysis/forecast_bench_results.json
+	$(PY) analysis/forecast_bench.py
+
 figures:                        ## regenerate every committed figure
 	$(PY) analysis/make_figure_deep.py
 	$(PY) analysis/make_figure_strategy.py
+	$(PY) analysis/make_figure_forecast.py
 
 notebook:                       ## execute the narrative walkthrough in-place (embeds outputs)
 	$(PY) -m nbconvert --to notebook --execute --inplace notebooks/strategy_walkthrough.ipynb
 
-all: findings strategy figures notebook test   ## regenerate the whole v2 deliverable from scratch
+all: findings strategy forecast figures notebook test   ## regenerate the whole v2 deliverable from scratch
 
 log:                             ## append today's close to the live paper-trade log (idempotent)
 	$(PY) analysis/paper_log.py
