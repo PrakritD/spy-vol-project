@@ -9,6 +9,12 @@ gex:
   dte_filter: [7, 60]    # monthly-expiry-only filter (build_id_list) caps cost
   multiplier: 100
 
+skew:
+  dte_filter: [7, 60]         # same monthly-expiry band as gex
+  put_target_delta: -0.25
+  call_target_delta: 0.25
+  atm_target_delta: 0.50
+
 microstructure:
   session_cutoff_et: "15:55:00"
   obi_windows_minutes: [5, 60]

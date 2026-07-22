@@ -2,6 +2,8 @@
 
 **Result.** Dealer gamma tracks realized volatility strongly: short-gamma days carry far higher RV (Welch t ≈ +28 over 15 years). But almost all of that is already in VIX: a variance decomposition puts **97.8%** of gamma's own explanatory power for log-RV inside a VIX/HAR baseline, leaving a 2.2% incremental sliver. On a calm 21-month options window that residual is undetectable, a clean null across six pre-registered formulations. On 15 years spanning real stress regimes, a small, statistically robust, gamma-specific increment survives: gamma-only Diebold-Mariano on CRPS **p = 0.001** (Clark-West, the correct test for this nested comparison, agrees at **p < 0.001**), ΔAUC **p = 0.001**. The increment is genuinely *gamma*, not the DIX flow signal that ships alongside it (adding DIX on top of gamma dilutes rather than helps, p = 0.006 vs 0.001), it survives a richer VIX baseline rather than proxying a stale VIX, and it is economically small. Finding it at all took statistical power, multiple regimes, and a confound check.
 
+The same 21-month options window also backs a second, independent signal test with the identical kill-switch protocol: 25-delta put-call skew (§5c). It is not a VIX echo story like gamma, it is a cleaner, more decisive null, both formulations tested significantly *underperform* the baseline.
+
 Runnable evidence is in `analysis/`. This is the signal investigation behind one of the inputs to the strategy in [`STRATEGY.md`](STRATEGY.md).
 
 ---
@@ -85,6 +87,28 @@ It is also small: dCRPS ≈ +0.002 on a baseline CRPS ≈ 0.22 (under 1% relativ
 
 ![Deep-history result: a small but robust gamma-specific increment](analysis/figures/deep_history_result.png)
 
+### 5c. A second options-market signal, same window: put-call skew
+
+The same 21-month OPRA window backs a second, independent kill-switch test, same protocol as
+§5a: does the market's own risk reversal (25-delta put IV minus 25-delta call IV,
+`features/skew.py`, walk-forward DM/CRPS vs. HAR/VIX, `analysis/phase_skew.py`) carry next-day
+RV information beyond VIX/HAR? No, and more decisively than gamma's clean null: both
+formulations tested *significantly underperform* the baseline (raw skew dCRPS=−0.00086, DM
+p=0.004; level-normalized skew dCRPS=−0.00069, DM p=0.026), the same "added complexity without
+payoff" pattern §5a already found in gamma's own by-strike profile shape. The skew itself is
+real and persistent even where it adds no forecasting power: positive (puts richer than calls,
+the standard equity direction) on 97.3% of days, averaging +5.17 vol points (std 2.89, range
+−1.8 to +17.8).
+
+![SPY options smile, term structure, and skew, 2024-08 -> 2026-04](analysis/figures/iv_surface.png)
+
+The smile figure plots every live contract in the delta-0.05-to-0.95 band on the most recent
+trading day (2026-04-29) rather than a single curated maturity, so the visible noise at the
+delta extremes is real thin-tape variance in the underlying statistics-derived closes, not
+hidden. The 45-60-day-to-expiry bucket is absent from the term-structure panel on this specific
+day: the monthly-expiry-only universe (`build_id_list.py`'s convention, used everywhere in this
+project) does not always have a live contract in every DTE bucket on every day.
+
 ## 6. Conclusion
 
 Dealer gamma carries a small, statistically robust increment to next-day RV forecasting beyond VIX. It is detectable only on a powered, multi-regime sample, it is gamma-specific rather than a DIX or stale-VIX artifact, and it was invisible on a calm 21-month window, which is a reminder that "no signal" on a short single-regime sample is a statement about power, not about the world.
@@ -102,4 +126,8 @@ python analysis/phase1_robustness.py     # gamma-vs-DIX + richer-VIX decompositi
 python analysis/phase0_gonogo.py         # 21-month sub-study (level)
 python analysis/phase05_reframe.py       # 21-month sub-study (path/dynamics/tails/regime)
 python analysis/phase05b_profile.py      # 21-month sub-study (profile shape)
+python -m features.opra_panel            # raw OPRA DBN -> options_panel.parquet (free, local decode)
+python -m features.assemble configs/features.yaml   # -> features_panel.parquet (GEX + skew)
+python analysis/phase_skew.py            # 21-month sub-study (put-call skew, 5c)
+python analysis/make_figure_iv_surface.py   # -> analysis/figures/iv_surface.png
 ```

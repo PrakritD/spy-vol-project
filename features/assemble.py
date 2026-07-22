@@ -4,6 +4,7 @@ Joins (point-in-time):
     Yang-Zhang RV target    features/rv_target.daily_yang_zhang_rv + build_target
     VIX family features     features/vix_termstructure.compute   (shift(1) at join)
     GEX                     features/gex.run                     (shift(1) at join)
+    Put-call skew           features/skew.run                    (shift(1) at join)
     SPY/VXX close (current) for execution + sizing context
 
 The microstructure feature group is excluded — it needs ARCX SPY tbbo which
@@ -26,7 +27,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from features import gex, rv_target, vix_termstructure
+from features import fast_iv, gex, rv_target, skew, vix_termstructure
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -89,10 +90,22 @@ def assemble(cfg_path: Path) -> pd.DataFrame:
         dte_hi_days=cfg["gex"]["dte_filter"][1],
         multiplier=cfg["gex"]["multiplier"],
     )
-    print(f"computing GEX over {len(options_panel):,} contract-days "
-          f"({options_panel['date'].nunique()} trading days)...")
-    gex_daily = gex.run(options_panel, gex_cfg).set_index("date").sort_index()
-    gex_daily = gex_daily.drop(columns=["gex_regime"], errors="ignore")  # str col
+    skew_cfg = skew.SkewConfig(
+        dte_lo_days=cfg["skew"]["dte_filter"][0],
+        dte_hi_days=cfg["skew"]["dte_filter"][1],
+        put_target_delta=cfg["skew"]["put_target_delta"],
+        call_target_delta=cfg["skew"]["call_target_delta"],
+        atm_target_delta=cfg["skew"]["atm_target_delta"],
+    )
+    print(f"inverting IV over {len(options_panel):,} contract-days "
+          f"({options_panel['date'].nunique()} trading days) -- "
+          f"shared once between GEX and skew (vectorized solver, see features/fast_iv.py)...")
+    greeks = fast_iv.compute_contract_greeks_fast(options_panel)
+
+    gex_daily = gex.aggregate_gex(gex.filter_contracts(greeks, gex_cfg), gex_cfg)
+    gex_daily = gex_daily.set_index("date").sort_index().drop(columns=["gex_regime"], errors="ignore")
+
+    skew_daily = skew.from_greeks(greeks, skew_cfg).set_index("date").sort_index()
 
     # ---- 4. Yang-Zhang RV + binary regime target -------------------------
     rv_daily = rv_target.daily_yang_zhang_rv(spy_ohlc)
@@ -113,6 +126,8 @@ def assemble(cfg_path: Path) -> pd.DataFrame:
     # info available before session t opens.
     feats = vix_feats.shift(1).add_suffix("_lag1").join(
         gex_daily.shift(1).add_suffix("_lag1"), how="outer"
+    ).join(
+        skew_daily.shift(1).add_suffix("_lag1"), how="outer"
     )
     panel = feats.join(
         target[["rv", "rv_5d_mean", "rv_rolling_mean", "rv_next", "y_next"]],

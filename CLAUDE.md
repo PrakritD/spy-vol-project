@@ -21,7 +21,8 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | Where | What lives there |
 |---|---|
 | `analysis/strategy_two_sleeve.py` | the flagship backtest; writes `strategy_results.json`, `strategy_equity.parquet`, `strategy_curves.csv` |
-| `analysis/phase1_*.py` | the FINDINGS deep-history signal study and its confound decomposition |
+| `analysis/phase1_*.py`, `phase0_gonogo.py`, `phase05*.py`, `phase_skew.py` | the FINDINGS deep-history + 21-month OPRA sub-studies (gamma level/path/profile, then put-call skew) |
+| `features/opra_panel.py`, `assemble.py`, `gex.py`, `skew.py`, `fast_iv.py` | raw OPRA DBN -> `options_panel.parquet` -> `features_panel.parquet`; `fast_iv.py` is a vectorized IV solver validated against `gex.py`'s scalar one (see `tests/test_fast_iv.py`), used for bulk panel builds only |
 | `analysis/strategy_results.json` | the single source of every number quoted in STRATEGY.md |
 | `analysis/strategy_curves.csv` | committed, ToS-clean equity curves; the notebook's only data input |
 | `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py`, `cross_vehicle.py`, `vix_futures_curve.py`, `vix_futures_term_pca.py`, `black76.py`, `black76_tail_floor_demo.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–5 |
