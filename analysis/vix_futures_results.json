@@ -1,0 +1,56 @@
+{
+  "window": [
+    "2008-01-01",
+    "2013-12-31"
+  ],
+  "vixy_vs_futures_corr_2011_overlap": 0.9612181588356391,
+  "constant_maturity_short": {
+    "name": "VX constant-maturity short (2008-2013, no borrow)",
+    "n": 1511,
+    "sharpe": 1.1010797480119603,
+    "sortino": 1.222358618572441,
+    "calmar": 1.0523717633969352,
+    "cagr": 0.12496314621642757,
+    "ann_vol": 0.11276542300258074,
+    "maxdd": -0.11874429793997976,
+    "uw_days": 243,
+    "hit": 0.5069490403706155,
+    "pf": 1.2259735748147556,
+    "skew": -0.9975543619992885,
+    "kurt": 4.056929942327734,
+    "final_equity": 2.0259412233086924
+  },
+  "vixy_same_window": {
+    "name": "VIXY (2011-2013 subset, no 2008-2010 data)",
+    "n": 752,
+    "sharpe": 1.14352043069567,
+    "sortino": 1.4113410441803835,
+    "calmar": 1.4799713989256675,
+    "cagr": 0.1320939630135256,
+    "ann_vol": 0.1142464568313118,
+    "maxdd": -0.08925440255765382,
+    "uw_days": 133,
+    "hit": 0.535904255319149,
+    "pf": 1.2232459140269982,
+    "skew": -0.6415721411308206,
+    "kurt": 2.532109217447766,
+    "final_equity": 1.4480786353450348
+  },
+  "constant_maturity_short_matched_to_vixy_dates": {
+    "name": "VX constant-maturity short (2011-2013, matched to VIXY dates)",
+    "n": 752,
+    "sharpe": 0.8639145932863941,
+    "sortino": 1.0110537857687973,
+    "calmar": 0.9763183755687718,
+    "cagr": 0.10786522855206471,
+    "ann_vol": 0.12814276631729804,
+    "maxdd": -0.1104816126084136,
+    "uw_days": 182,
+    "hit": 0.5425531914893617,
+    "pf": 1.1667748964962212,
+    "skew": -0.9155259488948929,
+    "kurt": 3.492381862196717,
+    "final_equity": 1.3575463102571015
+  },
+  "coverage_note": "free CBOE per-contract archive; gap-free/full-year/correctly-scaled only 2008-01..2013-12 -- see ingest/vix_futures_pull.py"
+}

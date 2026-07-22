@@ -185,6 +185,33 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   drag documented above, and SVXY's own -0.5x-fund NAV decay is a real cost baked into its
   price rather than a borrow line item, just a differently-shaped one.
 
+- **ETF-free implementation: real VIX futures, not the ETP wrapper.** Everything above trades
+  VIXY/VXX/SVXY/UVXY, index-tracking products with their own fees and NAV decay. CBOE's free
+  per-contract settlement archive turns out to be badly incomplete once probed directly
+  ([`ingest/vix_futures_pull.py`](ingest/vix_futures_pull.py)): gap-free and correctly scaled
+  against spot VIX only for 2008-01–2013-12, patchy for 2014–2018 (front 8 months only), and
+  the whole archive stops dead after 2018-02-23. Extending past that needs a paid feed (CBOE
+  DataShop or Databento's CFE feed), out of scope at this project's $0 budget. Within the
+  clean 2008–2013 window, [`analysis/vix_futures_curve.py`](analysis/vix_futures_curve.py)
+  builds a constant-30-day-maturity short directly on the front two VX contracts: no ETP
+  wrapper and no borrow, since this is a real futures short funded by margin, not a stock
+  loan. It tracks VIXY's own daily returns closely where the two overlap:
+
+  | | Window | Sharpe | Calmar | maxDD |
+  |---|---|---|---|---|
+  | VX constant-maturity short (no borrow) | 2008–2013 | 1.10 | 1.05 | −11.9% |
+  | VIXY, 2011–2013 subset (no 2008–2010 data) | 2011–2013 | 1.14 | 1.48 | −8.9% |
+  | VX constant-maturity short, matched to VIXY's dates | 2011–2013 | 0.86 | 0.98 | −11.0% |
+
+  Daily-return correlation between the two constructions over the 2011–2013 overlap is 0.96,
+  confirming the futures build is a faithful reconstruction of the same roll VIXY tracks, not
+  a different signal. But on the identical dates the futures version does not beat the ETP:
+  Sharpe 0.86 vs VIXY's 1.14, Calmar 0.98 vs 1.48, despite paying zero borrow. Removing the
+  borrow drag was not enough to offset the approximation in a 30-day-constant-maturity
+  weighting against VIXY's own, more granular roll in this sample. This does not settle the
+  capacity question above (a book too large for VIXY's ADV would still need the futures
+  market), but it does mean "no borrow" alone is not a free Sharpe upgrade here.
+
 - **Data staleness and margin.** The contango flag is never computed from a stale print: in the current data vintage VIX3M is present on every panel day (zero forward-filled observations; VVIX needs 8). Shorting VIXY draws elevated house margin, often 100% of notional or more, but at the 0.2x book used here the position is comfortably financeable; the binding cost is borrow, not margin.
 
 ## 6. Limitations
@@ -193,7 +220,7 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 - **Borrow swings the result.** Net of realistic borrow the strategy keeps its drawdown advantage over SPY while giving up any Sharpe advantage, because the book pays borrow on nearly every day it is short.
 - **It is short volatility.** The premium is real and so is the left tail (skew −1.31, kurt 6.1). The strategy is built to flatten *before* the gap, and a true overnight gap through the filter is the residual risk it cannot hedge with a daily signal.
 - **Edge decay.** Post-2018 the Sharpe roughly halves; the recent-regime numbers (~0.50–0.57) are the right forward anchor, not the pooled 0.74.
-- **Capacity and vehicle.** Results ride on VIXY's tradability and on `VIX/VIX3M` as the curve proxy. A futures-level implementation (SPVXSTR roll) is the natural next step.
+- **Capacity and vehicle.** Results ride on VIXY's tradability and on `VIX/VIX3M` as the curve proxy. A futures-level, no-borrow implementation was tried (§5) but only a clean 2008–2013 free-data window is usable, and it did not clearly beat the ETP even there; extending it to the full sample needs a paid futures feed.
 
 ## 7. Where this goes next
 
