@@ -1,0 +1,31 @@
+{
+  "window": [
+    "2008-01-01",
+    "2013-12-31"
+  ],
+  "otm_pct": 1.2,
+  "t_days": 30,
+  "sigma_window": 60,
+  "call_price_pct_of_f": {
+    "n": 1492,
+    "mean": 0.019165760925338733,
+    "median": 0.013062745254284575,
+    "min": 0.001940161122995049,
+    "max": 0.06776734458025581
+  },
+  "crisis_snapshots": {
+    "2008 GFC (pre-Lehman)": {
+      "date": "2008-09-12",
+      "call_price_pct_of_f": 0.009892580167221564
+    },
+    "2010 flash crash (day before)": {
+      "date": "2010-05-05",
+      "call_price_pct_of_f": 0.007936267630945537
+    },
+    "2011 debt-ceiling downgrade (day before)": {
+      "date": "2011-08-04",
+      "call_price_pct_of_f": 0.024405091963035242
+    }
+  },
+  "caveat": "sigma is a realized-vol proxy, not a market implied vol; no VIX-options quotes are ingested in this project, so every price here is a lower bound on the real hedge cost, not an estimate of it"
+}

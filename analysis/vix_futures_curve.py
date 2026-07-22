@@ -121,8 +121,41 @@ def build_curve(p: pd.DataFrame) -> pd.DataFrame:
         index_ret[i] = prev_w1[i] * r1 + prev_w2[i] * r2
 
     wide["index_ret"] = index_ret
+    # Contemporaneous 30-day constant-maturity LEVEL (today's own w1, not shifted): this is a
+    # market price known at date t, exactly like the raw vix/vix3m columns elsewhere in the
+    # repo -- only POSITION formation off of it needs the t-1 lag, which index_ret already has.
+    wide["cm_level"] = wide["w1"] * wide["settle1"] + wide["w2"] * wide["settle2"]
     return wide[["trade_date", "contract_code1", "contract_code2", "dte1", "dte2",
-                 "w1", "w2", "index_ret"]].rename(columns={"trade_date": "date"})
+                 "w1", "w2", "index_ret", "cm_level"]].rename(columns={"trade_date": "date"})
+
+
+DEFAULT_TENORS = (30, 60, 90, 120, 150, 180)
+
+
+def build_term_structure(p: pd.DataFrame, tenors: tuple[int, ...] = DEFAULT_TENORS) -> pd.DataFrame:
+    """Daily constant-maturity LEVEL at each tenor (calendar days to expiry), linearly
+    interpolated between the two live contracts bracketing that tenor -- the same
+    interpolation `build_curve` uses for the single 30-day point, generalized across the
+    curve. NaN on any date/tenor the live contracts on disk cannot bracket (e.g. a date with
+    fewer contracts trading than usual). Contemporaneous, like `cm_level` above: this is a
+    market price known at date t, not yet lagged for position formation."""
+    rows = []
+    for date, g in p.groupby("trade_date"):
+        g = g.sort_values("expiry_date")
+        dte = (g["expiry_date"] - date).dt.days.to_numpy()
+        settle = g["settle"].to_numpy()
+        rec: dict = {"date": date}
+        for m in tenors:
+            idx = int(np.searchsorted(dte, m))
+            if idx == 0 or idx >= len(dte):
+                rec[f"cm_{m}"] = np.nan
+                continue
+            d_lo, d_hi = dte[idx - 1], dte[idx]
+            s_lo, s_hi = settle[idx - 1], settle[idx]
+            w_lo = (d_hi - m) / (d_hi - d_lo) if d_hi != d_lo else 1.0
+            rec[f"cm_{m}"] = w_lo * s_lo + (1 - w_lo) * s_hi
+        rows.append(rec)
+    return pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
 
 
 def main() -> int:

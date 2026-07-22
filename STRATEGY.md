@@ -212,6 +212,48 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   capacity question above (a book too large for VIXY's ADV would still need the futures
   market), but it does mean "no borrow" alone is not a free Sharpe upgrade here.
 
+- **Term-structure PCA sizing, on the real futures curve.** §7 below proposes replacing the
+  binary contango switch with a signal sized to the roll's predicted magnitude, noting that a
+  crude continuous version (sizing on the VIX3M-VIX slope directly) already under-performs the
+  binary gate. [`analysis/vix_futures_term_pca.py`](analysis/vix_futures_term_pca.py) tries a
+  properly walk-forward version instead, on the real futures curve rather than the two-index
+  proxy: six constant-maturity tenors (30-180 days, from the same clean 2008-2013 window), a
+  causal PCA (expanding window, monthly refit, 5-day embargo, matching this repo's existing
+  ML-sizing convention) extracting a slope score (PC2, sign-fixed each refit against measured
+  contango depth), used to continuously scale the existing binary gate rather than replace it.
+  On the post-warmup test window (n=931, 2010-2013):
+
+  | | Sharpe | Calmar | maxDD | Hit rate |
+  |---|---|---|---|---|
+  | Binary gate (same matched window) | 1.10 | 1.13 | −12.3% | 55.7% |
+  | PCA slope-scaled gate | 1.64 | 2.23 | −8.8% | 30.5% |
+
+  This is a real effect in this sample, not a single lucky day: HAC t=3.24; Sharpe only drops
+  to 1.09 with the ten best days removed (back to roughly the binary gate's own level, not
+  below it); the first and second half of the test window post similar Sharpes (1.81, 1.46).
+  The hit rate falls because the multiplier sits at zero on about half the days the binary
+  gate would be short (no confirmed extra contango depth that period), so this is a fewer,
+  better-timed-bets profile, not a higher-hit-rate one. But it is a SINGLE untuned
+  specification (six tenors, a 2.0x cap, monthly refits, none swept or cross-validated) on a
+  narrow six-year, 931-observation window, with no multiplicity adjustment computed the way
+  the headline's 22-variant deflated Sharpe was. Read this as a promising proof of concept for
+  walk-forward carry-magnitude sizing on the real futures curve, not a validated result.
+
+- **Black-76 groundwork for the tail floor.** §7 also proposes a convex left-tail floor (a
+  VIX-call ladder) sized as negative carry.
+  [`analysis/black76.py`](analysis/black76.py) is the pricing primitive (validated against
+  put-call parity and the standard zero-vol/deep-ITM/deep-OTM boundary limits), and
+  [`analysis/black76_tail_floor_demo.py`](analysis/black76_tail_floor_demo.py) demonstrates it
+  on the constant-maturity futures curve: a 30-day, 20%-OTM call averaged 1.9% of the forward
+  level across 2008-2013 (median 1.3%, range 0.2-6.8%). This is illustrative, not a real
+  quote: no VIX-options market data is ingested in this project, so sigma is a trailing-60-day
+  realized-vol proxy, not an implied vol, and real VIX-option IV trades persistently above
+  realized vol (the same premium the whole strategy sells), so every number here understates
+  the real hedge cost. One genuine finding survives that caveat: the proxy price was CHEAPER
+  than the sample average right before two of the three crisis snapshots checked (0.99% of
+  forward the day before Lehman, 0.79% the day before the 2010 flash crash, against a 1.9%
+  mean), the same blind spot a realized-vol-only hedge would have had walking into both.
+
 - **Data staleness and margin.** The contango flag is never computed from a stale print: in the current data vintage VIX3M is present on every panel day (zero forward-filled observations; VVIX needs 8). Shorting VIXY draws elevated house margin, often 100% of notional or more, but at the 0.2x book used here the position is comfortably financeable; the binding cost is borrow, not margin.
 
 ## 6. Limitations
@@ -226,9 +268,9 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 
 The three highest-value free-data upgrades all attack the *drawdown*, which is the strategy's actual edge, rather than chasing a Sharpe it structurally cannot win:
 
-1. **Continuous, magnitude-scaled roll/slope sizing** to replace the binary switch, sizing on the *predicted magnitude* of the roll rather than its sign. The term-structure slope (the second principal component) prices variance risk across maturities; a crude continuous version already under-performed the binary gate, so the value is in a properly walk-forward-sized signal, not a hand-set cap.
+1. **Continuous, magnitude-scaled roll/slope sizing** to replace the binary switch, sizing on the *predicted magnitude* of the roll rather than its sign. A crude version (sizing directly on the VIX3M-VIX slope) already under-performs the binary gate; a properly walk-forward PCA slope score on the real futures curve looks considerably better in a narrow 2008-2013 test (§5), but it is one untuned specification on 931 observations with no multiplicity sweep, so validating it the way the headline strategy is validated (a variant sweep, a deflated Sharpe) is the next step before it earns any more weight than a proof of concept.
 2. **Explicit forward-VRP conditioning**: size on model-free implied variance minus a Yang–Zhang realized-variance forecast, cutting exposure as the *ex-ante* premium collapses, which is the regime that precedes blowups.
-3. **A convex left-tail floor** (a VIX-call ladder or SPX put-spread) sized as negative carry, to cap the one thing a daily term-structure gate provably cannot defend: the intraday Feb-2018-style spike.
+3. **A convex left-tail floor** (a VIX-call ladder or SPX put-spread) sized as negative carry, to cap the one thing a daily term-structure gate provably cannot defend: the intraday Feb-2018-style spike. The pricing primitive exists now (§5, Black-76), but it needs real VIX-options quotes, not a realized-vol proxy, before it prices anything but a lower bound.
 
 The dead-ends are equally clear and not worth relitigating: gamma/DIX timing (a VIX echo, see `FINDINGS.md`), naive vol-targeting (neutral on VIXY), fixed roll-yield thresholds (a textbook out-of-sample failure), and backwardation as a re-entry timer. The structural verdict stands: daily short-vol is a beta-like premium, and its only durable differentiation is the drawdown profile.
 

@@ -1,0 +1,92 @@
+{
+  "window": [
+    "2008-01-01",
+    "2013-12-31"
+  ],
+  "tenors": [
+    30,
+    60,
+    90,
+    120,
+    150,
+    180
+  ],
+  "train0": 504,
+  "refit_every": 21,
+  "embargo": 5,
+  "cap": 2.0,
+  "binary_gate": {
+    "name": "binary gate (post-warmup window, matched to PCA)",
+    "n": 931,
+    "sharpe": 1.1044680263723383,
+    "sortino": 1.2587878993547907,
+    "calmar": 1.1273581058389248,
+    "cagr": 0.13833630741210712,
+    "ann_vol": 0.12438206405353204,
+    "maxdd": -0.12270839824153656,
+    "uw_days": 170,
+    "hit": 0.5574650912996778,
+    "pf": 1.217977509781327,
+    "skew": -1.04625277916567,
+    "kurt": 3.66387727580792,
+    "final_equity": 1.6139443694304942
+  },
+  "pca_slope_scaled_gate": {
+    "name": "PCA slope-scaled gate",
+    "n": 931,
+    "sharpe": 1.6371120368356484,
+    "sortino": 1.4707597563625407,
+    "calmar": 2.2309005868457423,
+    "cagr": 0.1967510295727226,
+    "ann_vol": 0.11370452880452948,
+    "maxdd": -0.08819354422731485,
+    "uw_days": 301,
+    "hit": 0.3050483351235231,
+    "pf": 1.5322315416633472,
+    "skew": -0.36753161573333204,
+    "kurt": 7.815728276495079,
+    "final_equity": 1.9416937902264557
+  },
+  "pca_hac_tstat": 3.2362346225437655,
+  "pca_fragility": {
+    "minus_top1": 1.578761234643549,
+    "minus_top3": 1.4660971117098198,
+    "minus_top5": 1.3603391621310843,
+    "minus_top10": 1.0942237826679218
+  },
+  "pca_split_sample": {
+    "first_half": {
+      "name": "first half",
+      "n": 465,
+      "sharpe": 1.8112727424634714,
+      "sortino": 1.7330188873263388,
+      "calmar": 2.493784830413645,
+      "cagr": 0.2199357227344927,
+      "ann_vol": 0.1133500183662012,
+      "maxdd": -0.08819354422731485,
+      "uw_days": 65,
+      "hit": 0.37849462365591396,
+      "pf": 1.5728106012609784,
+      "skew": -0.35125286765753055,
+      "kurt": 7.371758276516161,
+      "final_equity": 1.4431525024764291
+    },
+    "second_half": {
+      "name": "second half",
+      "n": 466,
+      "sharpe": 1.4645818217603617,
+      "sortino": 1.2468075678194268,
+      "calmar": 2.2409683986480817,
+      "cagr": 0.1740552992483695,
+      "ann_vol": 0.11404444727606165,
+      "maxdd": -0.07766968037272304,
+      "uw_days": 301,
+      "hit": 0.2317596566523605,
+      "pf": 1.4896824611971302,
+      "skew": -0.3843848903958707,
+      "kurt": 8.345227481488195,
+      "final_equity": 1.3454529489395843
+    }
+  },
+  "caveat": "single untuned specification (tenors/cap/refit cadence chosen once, not swept); no multiplicity-adjusted DSR was computed for it unlike the flagship strategy's 22-variant deflated Sharpe -- read this as a proof of concept on a narrow ~6-year window, not a validated headline result"
+}
