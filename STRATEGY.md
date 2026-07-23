@@ -256,6 +256,8 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 
 - **Data staleness and margin.** The contango flag is never computed from a stale print: in the current data vintage VIX3M is present on every panel day (zero forward-filled observations; VVIX needs 8). Shorting VIXY draws elevated house margin, often 100% of notional or more, but at the 0.2x book used here the position is comfortably financeable; the binding cost is borrow, not margin.
 
+- **Gap risk, quantified.** §6 below states qualitatively that a true overnight gap through the daily contango gate is the residual risk a once-a-day signal cannot hedge. A regime-conditional stationary block bootstrap of the carry sleeve's own historical return stream ([`analysis/gap_risk_mc.py`](analysis/gap_risk_mc.py); 5,000 draws, 90-day mean block, seed 7; contiguous blocks keep the historical return and contango-gate regime label paired, so in-market crisis clustering survives resampling) puts a number on it: P(maxDD worse than −20%) = 29%, P(maxDD worse than −25%) = 8%, P(maxDD worse than −30%) = 2%, against the realized −15% headline. Block length matters in the same direction it does for the paired bootstrap above: a 30-day mean block (less crisis-clustering credit) raises these to 50%/18%/6%, a 180-day block lowers them to 17%/3%/1%. This resamples the rule's own historical dynamics, not a forecast of the next drawdown, but it is a materially wider tail than the single realized path shows.
+
 ## 6. Limitations
 
 - **Fill convention.** There is no intraday execution, and §5 quantifies what that costs: next-open fills deepen the maximum drawdown to −20%, and a full day of signal lag roughly halves the strategy. The daily signal cannot react within a crash day; the −3.9% Volmageddon figure reflects exactly that.
@@ -263,6 +265,26 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 - **It is short volatility.** The premium is real and so is the left tail (skew −1.31, kurt 6.1). The strategy is built to flatten *before* the gap, and a true overnight gap through the filter is the residual risk it cannot hedge with a daily signal.
 - **Edge decay.** Post-2018 the Sharpe roughly halves; the recent-regime numbers (~0.50–0.57) are the right forward anchor, not the pooled 0.74.
 - **Capacity and vehicle.** Results ride on VIXY's tradability and on `VIX/VIX3M` as the curve proxy. A futures-level, no-borrow implementation was tried (§5) but only a clean 2008–2013 free-data window is usable, and it did not clearly beat the ETP even there; extending it to the full sample needs a paid futures feed.
+
+## 6a. Risk in standard vocabulary: VaR, ES, stress, beta
+
+Everything above is stated in Sharpe/Calmar/drawdown terms. For a reader who thinks in VaR and Expected Shortfall, the same carry-sleeve return series ([`analysis/risk_tearsheet.py`](analysis/risk_tearsheet.py)) translates as: 99% 1-day historical VaR is **2.60%**, with Expected Shortfall (the average loss beyond that threshold) at **3.34%**. The sleeve's own recomputed skew and kurtosis (−1.31, 6.14) reconcile to §6's pooled headline numbers exactly. A Cornish-Fisher tail adjustment, which corrects a Gaussian quantile for sample skew and kurtosis, gives a smaller pair here: VaR **1.58%**, ES **2.38%**. That is not the adjustment working as usually advertised: decomposing the expansion shows the negative-skew terms (−0.96 from the linear skew term, −0.65 from the skew² term) dominate the positive kurtosis term (+1.43), pulling the adjusted quantile in *less* conservative than plain Gaussian, let alone historical. This is a known breakdown mode of the Cornish-Fisher expansion at large negative skew, not evidence the true tail is thinner, so the historical estimate, which needs no distributional assumption, is the one to anchor sizing on, not the parametric correction.
+
+The co-drawdown table from §4e reformats directly into a stress-scenario table, unchanged in substance (source: `analysis/factor_regression_results.json`, not recomputed):
+
+| Scenario | SPY move | Strategy move | % days in-market |
+|---|---|---|---|
+| 2011 US debt-ceiling downgrade | −15.1% | −1.7% | 15% |
+| 2015–16 China slowdown / oil crash | −13.0% | −6.8% | 85% |
+| Volmageddon 2018 | −10.1% | −3.8% | 60% |
+| Q4 2018 rate-shock selloff | −19.4% | −11.8% | 61% |
+| COVID 2020 | −33.7% | −5.6% | 17% |
+| 2022 rate-hike bear market | −24.5% | −10.1% | 93% |
+| 2025 tariff-shock selloff | −18.8% | −3.4% | 60% |
+
+A 126-day (~6-month) rolling beta against SPY ranges from **+0.04 to +1.42** (mean +0.64, current +0.55), wider swings than the static full-sample CAPM beta of 0.42 (§4e) shows on its own. The two are not in conflict: the full-sample pooled beta recomputed here is 0.4247, matching §4e's static CAPM beta of 0.4247 almost exactly; the gap to the 0.64 rolling mean is a genuine time-varying-exposure fact; the mean of many short-window ratios is not the same statistic as one ratio computed on the pooled sample. The book's rolling beta rises around 2018 and again through 2022, consistent with §4e's finding that the beta concentrates on down-days and while the book is in-market: the static beta describes the average exposure, the rolling beta shows when that exposure is elevated.
+
+![Risk tearsheet](analysis/figures/risk_tearsheet.png)
 
 ## 7. Where this goes next
 
@@ -283,7 +305,10 @@ python analysis/strategy_two_sleeve.py   # full backtest + tables -> strategy_re
 python analysis/execution_lag.py         # fill-convention sensitivity -> execution_lag_results.json
 python analysis/factor_regression.py     # CAPM/FF6, state betas, co-drawdowns -> factor_regression_results.json
 python analysis/drawdown_inference.py    # paired bootstrap on the drawdown edge -> drawdown_inference_results.json
+python analysis/gap_risk_mc.py           # regime-conditional gap-risk bootstrap -> gap_risk_mc_results.json
 python analysis/capacity.py              # flip size vs VIXY dollar ADV -> capacity_results.json
+python analysis/risk_tearsheet.py        # VaR/ES, stress table, rolling beta -> risk_tearsheet_results.json
+python analysis/make_figure_tearsheet.py # one-page risk tearsheet figure
 python analysis/make_figure_strategy.py  # the three figures (headline, research, rolling)
 ```
 

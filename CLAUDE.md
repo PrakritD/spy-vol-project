@@ -25,7 +25,7 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | `features/opra_panel.py`, `assemble.py`, `gex.py`, `skew.py`, `fast_iv.py` | raw OPRA DBN -> `options_panel.parquet` -> `features_panel.parquet`; `fast_iv.py` is a vectorized IV solver validated against `gex.py`'s scalar one (see `tests/test_fast_iv.py`), used for bulk panel builds only |
 | `analysis/strategy_results.json` | the single source of every number quoted in STRATEGY.md |
 | `analysis/strategy_curves.csv` | committed, ToS-clean equity curves; the notebook's only data input |
-| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py`, `cross_vehicle.py`, `vix_futures_curve.py`, `vix_futures_term_pca.py`, `black76.py`, `black76_tail_floor_demo.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–5 |
+| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py`, `gap_risk_mc.py`, `cross_vehicle.py`, `vix_futures_curve.py`, `vix_futures_term_pca.py`, `black76.py`, `black76_tail_floor_demo.py`, `risk_tearsheet.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–6a |
 | `analysis/forecast_bench.py` | FORECASTING.md's walk-forward ML benchmark (HAR/HAR+VIX vs quantile GBM/MLP); writes `forecast_bench_results.json` |
 | `analysis/paper_log.py` | live paper-trade log; appends one row/session to committed `paper_log.csv` |
 | `ingest/deep_pull.py` | fetches every flagship data input; manifest in `data/raw/deep_manifest.json` |

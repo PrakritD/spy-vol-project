@@ -1,0 +1,90 @@
+{
+  "method": "Single-series Politis-Romano stationary bootstrap (geometric block lengths, wrap-around) over the carry sleeve's own historical (date, return, inmkt) sequence; blocks are contiguous historical stretches, so each resampled block keeps its historical return and contango-gate regime label paired, preserving in-market crisis clustering without splitting into separately-resampled regime sub-series. Answers P(maxDD worse than -20%/-25%/-30%) over a full backtest-length horizon, conditioned on the carry sleeve's own realized dynamics.",
+  "caveat": "Bootstrap paths scramble the ordering of historical blocks, so resampled maxDD draws measure the dispersion of the carry sleeve's own drawdown risk under exchangeable-block resampling of its own history, not a forecast of the next realized drawdown.",
+  "data": {
+    "source": "analysis/strategy_equity.parquet",
+    "columns": [
+      "carry",
+      "inmkt"
+    ],
+    "n_days": 3731,
+    "start": "2011-07-28",
+    "end": "2026-05-29"
+  },
+  "seed": 7,
+  "point_estimate": {
+    "sharpe": 0.7444415111187254,
+    "maxdd": -0.15281555173925837,
+    "cagr": 0.0850503827865156,
+    "calmar": 0.5565558074326942,
+    "inmkt_fraction": 0.9209327258107746
+  },
+  "main": {
+    "mean_block_days": 90,
+    "n_draws": 5000,
+    "maxdd_ci95": [
+      -0.28838908836636185,
+      -0.12137366973626706
+    ],
+    "maxdd_median": -0.17476725923511485,
+    "maxdd_mean": -0.18272181299045237,
+    "sharpe_ci95": [
+      0.3464158060297181,
+      1.1473475565607971
+    ],
+    "calmar_ci95": [
+      0.14735843230408643,
+      1.0242466967656432
+    ],
+    "mean_inmkt_fraction": 0.9216561779683732,
+    "p_maxdd_worse_than_-20pct": 0.2874,
+    "p_maxdd_worse_than_-25pct": 0.0752,
+    "p_maxdd_worse_than_-30pct": 0.0184
+  },
+  "sensitivity": {
+    "30": {
+      "mean_block_days": 30,
+      "n_draws": 5000,
+      "maxdd_ci95": [
+        -0.3340927289114067,
+        -0.12889633080321344
+      ],
+      "maxdd_median": -0.1994274171261935,
+      "maxdd_mean": -0.20687866944833136,
+      "sharpe_ci95": [
+        0.3242859641850262,
+        1.1884057620169688
+      ],
+      "calmar_ci95": [
+        0.11393021856453063,
+        0.9775478044895275
+      ],
+      "mean_inmkt_fraction": 0.9208135620477084,
+      "p_maxdd_worse_than_-20pct": 0.4954,
+      "p_maxdd_worse_than_-25pct": 0.1838,
+      "p_maxdd_worse_than_-30pct": 0.0582
+    },
+    "180": {
+      "mean_block_days": 180,
+      "n_draws": 5000,
+      "maxdd_ci95": [
+        -0.2571953314117658,
+        -0.12081114310346655
+      ],
+      "maxdd_median": -0.16215856145746682,
+      "maxdd_mean": -0.1690541238105318,
+      "sharpe_ci95": [
+        0.3887668141743749,
+        1.1019918346147024
+      ],
+      "calmar_ci95": [
+        0.18152939313816027,
+        0.9961741029060761
+      ],
+      "mean_inmkt_fraction": 0.920943982846422,
+      "p_maxdd_worse_than_-20pct": 0.1704,
+      "p_maxdd_worse_than_-25pct": 0.0336,
+      "p_maxdd_worse_than_-30pct": 0.0068
+    }
+  }
+}
