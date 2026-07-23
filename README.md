@@ -24,7 +24,7 @@ The rule itself is one line, and no parameter in it was fit on this sample: **sh
 
 1. **[`STRATEGY.md`](STRATEGY.md), the strategy.** The contango-filtered VRP carry above. The construction ladder in §4 isolates where the risk-adjusted return comes from: the term-structure filter more than doubles Calmar (0.23 → 0.56) and halves drawdown (−32% → −15%) by being absent during the regime that produces the losses. Full attribution, cost and borrow stress, and per-regime robustness inside.
 
-2. **[`FINDINGS.md`](FINDINGS.md), the signal investigation.** Does dealer gamma carry next-day realized-volatility information beyond VIX? Mostly not: gamma is almost entirely a VIX echo, a clean null on a calm 21-month options window. But on 15 years across real stress regimes there is a small, statistically robust, gamma-specific increment over a full VIX/HAR baseline (Diebold-Mariano on CRPS, **p = 0.001**). The increment is real and economically marginal, which is why §4b of the strategy finds gamma adds nothing once VIX is already in the model.
+2. **[`FINDINGS.md`](FINDINGS.md), the signal investigation** (also as a [PDF](report/FINDINGS.pdf) with abstract and references). Does dealer gamma carry next-day realized-volatility information beyond VIX? Mostly not: gamma is almost entirely a VIX echo, a clean null on a calm 21-month options window. But on 15 years across real stress regimes there is a small, statistically robust, gamma-specific increment over a full VIX/HAR baseline (Diebold-Mariano on CRPS, **p = 0.001**). The increment is real and economically marginal, which is why §4b of the strategy finds gamma adds nothing once VIX is already in the model.
 
 3. **[`FORECASTING.md`](FORECASTING.md), the ML benchmark.** Every ML component inside STRATEGY.md is a null; this asks the fair-shot question directly: can ML beat a strong classical baseline at forecasting next-day realized volatility? A walk-forward quantile gradient boosting model beats a VIX-augmented HAR baseline on CRPS by 2.9% (**p = 6.7 × 10⁻⁵**); a small MLP on the same features does not (3.5% worse, **p = 2.0 × 10⁻⁴**). Both results are reported with the same prominence.
 
@@ -61,6 +61,7 @@ make strategy       # VRP-carry backtest + robustness -> analysis/strategy_resul
 make findings       # deep-history gamma study + robustness decomposition
 make forecast       # walk-forward ML forecasting benchmark -> analysis/forecast_bench_results.json
 make figures        # regenerate the committed figures
+make findings-pdf   # render FINDINGS.md -> report/FINDINGS.pdf (pandoc + LaTeX)
 make log            # append today's close to the live paper-trade log (idempotent)
 make all            # everything above + execute the walkthrough notebook
 ```

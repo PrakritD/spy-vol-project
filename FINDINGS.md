@@ -1,6 +1,8 @@
 # Does Dealer Gamma Carry Volatility Information Beyond VIX?
 
-**Result.** Dealer gamma tracks realized volatility strongly: short-gamma days carry far higher RV (Welch t ≈ +28 over 15 years). But almost all of that is already in VIX: a variance decomposition puts **97.8%** of gamma's own explanatory power for log-RV inside a VIX/HAR baseline, leaving a 2.2% incremental sliver. On a calm 21-month options window that residual is undetectable, a clean null across six pre-registered formulations. On 15 years spanning real stress regimes, a small, statistically robust, gamma-specific increment survives: gamma-only Diebold-Mariano on CRPS **p = 0.001** (Clark-West, the correct test for this nested comparison, agrees at **p < 0.001**), ΔAUC **p = 0.001**. The increment is genuinely *gamma*, not the DIX flow signal that ships alongside it (adding DIX on top of gamma dilutes rather than helps, p = 0.006 vs 0.001), it survives a richer VIX baseline rather than proxying a stale VIX, and it is economically small. Finding it at all took statistical power, multiple regimes, and a confound check.
+## Abstract
+
+Dealer gamma tracks realized volatility strongly: short-gamma days carry far higher RV (Welch t ≈ +28 over 15 years). But almost all of that is already in VIX: a variance decomposition puts **97.8%** of gamma's own explanatory power for log-RV inside a VIX/HAR baseline, leaving a 2.2% incremental sliver. On a calm 21-month options window that residual is undetectable, a clean null across six pre-registered formulations. On 15 years spanning real stress regimes, a small, statistically robust, gamma-specific increment survives: gamma-only Diebold-Mariano on CRPS **p = 0.001** (Clark-West, the correct test for this nested comparison, agrees at **p < 0.001**), ΔAUC **p = 0.001**. The increment is genuinely *gamma*, not the DIX flow signal that ships alongside it (adding DIX on top of gamma dilutes rather than helps, p = 0.006 vs 0.001), it survives a richer VIX baseline rather than proxying a stale VIX, and it is economically small. Finding it at all took statistical power, multiple regimes, and a confound check.
 
 The same 21-month options window also backs a second, independent signal test with the identical kill-switch protocol: 25-delta put-call skew (§5c). It is not a VIX echo story like gamma, it is a cleaner, more decisive null, both formulations tested significantly *underperform* the baseline.
 
@@ -131,3 +133,13 @@ python -m features.assemble configs/features.yaml   # -> features_panel.parquet 
 python analysis/phase_skew.py            # 21-month sub-study (put-call skew, 5c)
 python analysis/make_figure_iv_surface.py   # -> analysis/figures/iv_surface.png
 ```
+
+## 8. References
+
+- Alexander, C. and D. Korovilas (2012). *Diversification of Equity with VIX Futures: Personal Views and Skewness Preference.* Working paper, ICMA Centre.
+- Bollerslev, T., G. Tauchen, and H. Zhou (2009). *Expected Stock Returns and Variance Risk Premia.* Review of Financial Studies 22(11), 4463–4492.
+- Cheng, I.-H. (2019). *The VIX Premium.* Review of Financial Studies 32(1), 180–227.
+- Cooper, T. (2013). *Easy Volatility Investing.* SSRN working paper 2255327.
+- Corsi, F. (2009). *A Simple Approximate Long-Memory Model of Realized Volatility.* Journal of Financial Econometrics 7(2), 174–196.
+- Simon, D. and J. Campasano (2014). *The VIX Futures Basis: Evidence and Trading Strategies.* Journal of Derivatives 21(3), 54–69.
+- Whaley, R. (2013). *Trading Volatility: At What Cost?* Journal of Portfolio Management 40(1), 95–108.

@@ -24,6 +24,7 @@ v1-writeup.md
 
 **/_build/
 report/*.pdf
+!report/FINDINGS.pdf
 
 .DS_Store
 .idea/

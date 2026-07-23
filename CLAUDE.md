@@ -47,6 +47,7 @@ make findings                # FINDINGS.md deep-history + robustness
 make forecast                # FORECASTING.md walk-forward ML benchmark -> analysis/forecast_bench_results.json
 make figures                 # regenerate committed figures
 make notebook                # execute notebooks/strategy_walkthrough.ipynb in place
+make findings-pdf            # render FINDINGS.md -> report/FINDINGS.pdf (pandoc + LaTeX)
 make log                     # append today's close to the live paper-trade log (idempotent)
 make all                     # findings + strategy + forecast + figures + notebook + test
 ```

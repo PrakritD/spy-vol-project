@@ -1,7 +1,7 @@
 PY ?= python
 
 .PHONY: install test lint strategy findings forecast figures notebook all clean \
-        deep quote sample data log
+        deep quote sample data log findings-pdf
 
 # ---------------------------------------------------------------- v2 deliverables ----
 install:                        ## editable install + dev tools (pytest, ruff)
@@ -30,6 +30,12 @@ figures:                        ## regenerate every committed figure
 
 notebook:                       ## execute the narrative walkthrough in-place (embeds outputs)
 	$(PY) -m nbconvert --to notebook --execute --inplace notebooks/strategy_walkthrough.ipynb
+
+findings-pdf:                   ## render FINDINGS.md -> report/FINDINGS.pdf (pandoc + LaTeX)
+	mkdir -p report
+	pandoc FINDINGS.md -o report/FINDINGS.pdf \
+		--pdf-engine=xelatex --toc -V geometry:margin=1in -V fontsize=11pt -V colorlinks=true \
+		-V mainfont="Arial Unicode MS" --include-in-header=report/findings_pdf_header.tex
 
 all: findings strategy forecast figures notebook test   ## regenerate the whole v2 deliverable from scratch
 
