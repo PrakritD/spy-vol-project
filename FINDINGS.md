@@ -36,6 +36,7 @@ SqueezeMetrics' `gex` is negative on **9.1%** of the deep window (~345 short-gam
 - **Pre-registration** of every mechanism-derived formulation, and strict no-lookahead (predictors ≤ `t−1`, gamma lagged for OCC's T-1 open interest).
 - **Out-of-sample expanding walk-forward** (~2y initial train, ~3,200 OOS days).
 - **The right test**: a **Diebold-Mariano test on the CRPS differential** of *nested* models (VIX/HAR versus +gamma), with Newey-West HAC and the Harvey small-sample correction, alongside a **Clark-West test** (the textbook correction for DM's conservative bias on nested models); binary targets via OOS log-loss and AUC with a stationary block-bootstrap. DM and the AUC bootstrap are two-sided tests of a one-sided (directional) hypothesis, "gamma helps"; CW is reported one-sided, as is standard for nested-model comparisons.
+- **CRPS caveat**: the predictive density scored is Gaussian, with sigma held at the train-window residual std (constant within each refit block, not a function of the same-day features). Daily RV residuals are fat-tailed, not Gaussian, so the absolute CRPS levels below are not calibrated forecast quality. The comparison itself is not weakened by this: M0 and M1 share the identical misspecified density, and the DM/CW tests difference it out.
 - **Per-regime reporting**, never pooled across the 0DTE structural break (pre-2020 / 2020-21 / 2022+).
 - **Confound decomposition** separating gamma from DIX and from stale VIX, with multiplicity in view.
 

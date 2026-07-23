@@ -24,6 +24,7 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EQUITY_PATH = REPO_ROOT / "analysis" / "strategy_equity.parquet"
+STRATEGY_PATH = REPO_ROOT / "analysis" / "strategy_results.json"
 FACTOR_PATH = REPO_ROOT / "analysis" / "factor_regression_results.json"
 OUT_PATH = REPO_ROOT / "analysis" / "risk_tearsheet_results.json"
 
@@ -167,6 +168,8 @@ def main() -> None:
     df = load_returns()
     r_carry = df["carry"].to_numpy(float)
     r_spy = df["spy_total"].to_numpy(float)
+    strategy_json = json.loads(STRATEGY_PATH.read_text())
+    factor_json = json.loads(FACTOR_PATH.read_text())
 
     skew, kurt = sample_skew_kurt(r_carry)
     var_hist, es_hist = historical_var_es(r_carry)
@@ -189,8 +192,8 @@ def main() -> None:
             "horizon_days": 1,
             "sample_skew": round(skew, 4),
             "sample_excess_kurtosis": round(kurt, 4),
-            "strategy_results_json_skew": -1.310131496623831,
-            "strategy_results_json_kurt": 6.1377702194257155,
+            "strategy_results_json_skew": strategy_json["headline_metrics"]["skew"],
+            "strategy_results_json_kurt": strategy_json["headline_metrics"]["kurt"],
             "historical": {
                 "var_99_1d": round(var_hist, 6),
                 "es_99_1d": round(es_hist, 6),
@@ -203,20 +206,20 @@ def main() -> None:
         },
         "stress_table": {
             "source": "analysis/factor_regression_results.json:co_drawdowns",
-            "episodes": stress_table(json.loads(FACTOR_PATH.read_text())),
+            "episodes": stress_table(factor_json),
         },
         "rolling_beta": {
             "market_series": "spy_total",
             "window_days": BETA_WINDOW,
             "full_sample_pooled_beta": round(full_sample_beta, 4),
-            "factor_regression_capm_beta": 0.4247,
+            "factor_regression_capm_beta": factor_json["capm"]["beta"],
             "note": (
                 "spy_total is used here (rather than spy_excess) so the rolling window lines "
                 "up with the raw market moves in the stress table above. The choice barely "
-                "matters: the full-sample pooled cov/var beta comes out the same either way "
-                "(0.4247 on spy_total, 0.4248 on spy_excess), both matching "
-                "factor_regression.py's static CAPM beta of 0.4247 almost exactly. The real gap "
-                "is between that pooled full-sample beta (0.42) and the mean of the 126-day "
+                f"matters: the full-sample pooled cov/var beta computed here ({full_sample_beta:.4f} "
+                f"on spy_total) matches factor_regression.py's static CAPM beta "
+                f"({factor_json['capm']['beta']:.4f}, computed on spy_excess) almost exactly. The "
+                "real gap is between that pooled full-sample beta and the mean of the 126-day "
                 "rolling betas (see 'mean' below, materially higher): beta is time-varying over "
                 "the window, and the mean of short-window ratios is not the same statistic as "
                 "the ratio computed on the pooled full sample. This is a real discrepancy worth "

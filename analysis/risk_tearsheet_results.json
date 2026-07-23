@@ -5,24 +5,24 @@
       "carry",
       "spy_total"
     ],
-    "n_days": 3731,
-    "start": "2011-07-28",
+    "n_days": 3791,
+    "start": "2011-05-03",
     "end": "2026-05-29"
   },
   "var_es": {
     "confidence": 0.99,
     "horizon_days": 1,
-    "sample_skew": -1.3101,
-    "sample_excess_kurtosis": 6.1378,
-    "strategy_results_json_skew": -1.310131496623831,
-    "strategy_results_json_kurt": 6.1377702194257155,
+    "sample_skew": -1.3073,
+    "sample_excess_kurtosis": 6.1063,
+    "strategy_results_json_skew": -1.3072765491098526,
+    "strategy_results_json_kurt": 6.1063331345549186,
     "historical": {
-      "var_99_1d": 0.025979,
-      "es_99_1d": 0.033385
+      "var_99_1d": 0.025798,
+      "es_99_1d": 0.033425
     },
     "cornish_fisher": {
-      "var_99_1d": 0.015818,
-      "es_99_1d": 0.023803,
+      "var_99_1d": 0.015784,
+      "es_99_1d": 0.023717,
       "z_gaussian_99": 2.326347874040845
     }
   },
@@ -30,14 +30,14 @@
     "source": "analysis/factor_regression_results.json:co_drawdowns",
     "episodes": [
       {
-        "scenario": "2011 US debt-ceiling downgrade",
-        "spy_peak": "2011-07-28",
+        "scenario": "2011-07-07 -> 2011-10-03",
+        "spy_peak": "2011-07-07",
         "spy_trough": "2011-10-03",
-        "days_peak_to_trough": 46,
-        "spy_move_pct": -15.14,
-        "strategy_move_pct": -1.7,
-        "strategy_worst_move_within_pct": -1.76,
-        "pct_days_in_market": 14.9
+        "days_peak_to_trough": 61,
+        "spy_move_pct": -18.37,
+        "strategy_move_pct": -4.81,
+        "strategy_worst_move_within_pct": -4.81,
+        "pct_days_in_market": 35.5
       },
       {
         "scenario": "2015-16 China slowdown / oil crash",
@@ -45,8 +45,8 @@
         "spy_trough": "2016-02-11",
         "days_peak_to_trough": 143,
         "spy_move_pct": -13.02,
-        "strategy_move_pct": -6.8,
-        "strategy_worst_move_within_pct": -11.55,
+        "strategy_move_pct": -6.9,
+        "strategy_worst_move_within_pct": -11.61,
         "pct_days_in_market": 85.4
       },
       {
@@ -55,8 +55,8 @@
         "spy_trough": "2018-02-08",
         "days_peak_to_trough": 9,
         "spy_move_pct": -10.1,
-        "strategy_move_pct": -3.75,
-        "strategy_worst_move_within_pct": -3.75,
+        "strategy_move_pct": -3.76,
+        "strategy_worst_move_within_pct": -3.76,
         "pct_days_in_market": 60.0
       },
       {
@@ -65,8 +65,8 @@
         "spy_trough": "2018-12-24",
         "days_peak_to_trough": 65,
         "spy_move_pct": -19.35,
-        "strategy_move_pct": -11.76,
-        "strategy_worst_move_within_pct": -12.08,
+        "strategy_move_pct": -11.79,
+        "strategy_worst_move_within_pct": -12.11,
         "pct_days_in_market": 60.6
       },
       {
@@ -75,8 +75,8 @@
         "spy_trough": "2020-03-23",
         "days_peak_to_trough": 23,
         "spy_move_pct": -33.72,
-        "strategy_move_pct": -5.56,
-        "strategy_worst_move_within_pct": -5.56,
+        "strategy_move_pct": -5.57,
+        "strategy_worst_move_within_pct": -5.57,
         "pct_days_in_market": 16.7
       },
       {
@@ -85,8 +85,8 @@
         "spy_trough": "2022-10-12",
         "days_peak_to_trough": 195,
         "spy_move_pct": -24.5,
-        "strategy_move_pct": -10.12,
-        "strategy_worst_move_within_pct": -12.29,
+        "strategy_move_pct": -10.26,
+        "strategy_worst_move_within_pct": -12.36,
         "pct_days_in_market": 93.4
       },
       {
@@ -95,8 +95,8 @@
         "spy_trough": "2025-04-08",
         "days_peak_to_trough": 34,
         "spy_move_pct": -18.76,
-        "strategy_move_pct": -3.39,
-        "strategy_worst_move_within_pct": -3.95,
+        "strategy_move_pct": -3.41,
+        "strategy_worst_move_within_pct": -3.96,
         "pct_days_in_market": 60.0
       }
     ]
@@ -104,13 +104,13 @@
   "rolling_beta": {
     "market_series": "spy_total",
     "window_days": 126,
-    "full_sample_pooled_beta": 0.4247,
-    "factor_regression_capm_beta": 0.4247,
-    "note": "spy_total is used here (rather than spy_excess) so the rolling window lines up with the raw market moves in the stress table above. The choice barely matters: the full-sample pooled cov/var beta comes out the same either way (0.4247 on spy_total, 0.4248 on spy_excess), both matching factor_regression.py's static CAPM beta of 0.4247 almost exactly. The real gap is between that pooled full-sample beta (0.42) and the mean of the 126-day rolling betas (see 'mean' below, materially higher): beta is time-varying over the window, and the mean of short-window ratios is not the same statistic as the ratio computed on the pooled full sample. This is a real discrepancy worth flagging, not a units or convention mismatch.",
-    "n_valid_windows": 3606,
-    "mean": 0.6386,
+    "full_sample_pooled_beta": 0.4271,
+    "factor_regression_capm_beta": 0.427,
+    "note": "spy_total is used here (rather than spy_excess) so the rolling window lines up with the raw market moves in the stress table above. The choice barely matters: the full-sample pooled cov/var beta computed here (0.4271 on spy_total) matches factor_regression.py's static CAPM beta (0.4270, computed on spy_excess) almost exactly. The real gap is between that pooled full-sample beta and the mean of the 126-day rolling betas (see 'mean' below, materially higher): beta is time-varying over the window, and the mean of short-window ratios is not the same statistic as the ratio computed on the pooled full sample. This is a real discrepancy worth flagging, not a units or convention mismatch.",
+    "n_valid_windows": 3666,
+    "mean": 0.6322,
     "min": 0.0436,
-    "max": 1.4222,
-    "current": 0.5501
+    "max": 1.4226,
+    "current": 0.5503
   }
 }

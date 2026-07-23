@@ -67,12 +67,17 @@ def load_panel() -> pd.DataFrame:
     rf = pq("data/raw/fred/dgs3mo_deep.parquet", ["date", "dgs3mo"])
 
     base = spy.merge(vixy, on="date", how="inner").merge(vix, on="date", how="inner")
-    df = base.merge(sq, on="date", how="inner")
-    # GEX/DIX may only gate the START of the panel (their history begins 2011-05). A mid-sample
-    # gap would splice a multi-day return into one row and corrupt every downstream number.
-    mid = base.loc[base["date"] >= df["date"].min(), "date"]
-    if not mid.isin(df["date"]).all():
+    # LEFT join: VIXY/VIX/SPY start 2011-01, SqueezeMetrics DIX/GEX only from 2011-05. An inner
+    # join would needlessly gate the whole panel's start on DIX/GEX coverage even though the core
+    # contango-gate carry sleeve never touches gex/dix; a left join keeps the ~4 extra months,
+    # with gex/dix (and everything derived from them) correctly NaN there, not silently zero.
+    # Guard against a mid-sample gap WITHIN SqueezeMetrics' own coverage (that would splice a
+    # multi-day return into one row and corrupt every downstream number); the pre-coverage gap at
+    # the front is expected, not a bug, so it is excluded from this check.
+    mid = base.loc[base["date"] >= sq["date"].min(), "date"]
+    if not mid.isin(sq["date"]).all():
         raise ValueError("SqueezeMetrics has mid-sample gaps; refusing to splice returns")
+    df = base.merge(sq, on="date", how="left")
     df = (df
              .merge(lvl("VIX3M", "vix3m"), on="date", how="left")
              .merge(lvl("VIX9D", "vix9d"), on="date", how="left")
@@ -112,8 +117,16 @@ def build_signals(df: pd.DataFrame) -> pd.DataFrame:
     d["vvix_z"] = ((vvr - vvr.rolling(60).mean()) / vvr.rolling(60).std()).shift(1)
 
     # --- dealer gamma (lagged for OCC T-1 OI) ---
-    d["gex_pct"] = d["gex"].rolling(252, min_periods=60).apply(lambda a: (a[-1] > a).mean(), raw=True).shift(1)
-    d["gex_neg"] = (d["gex"] < 0).astype(float).shift(1)
+    # NaN-safe: with the panel now left-joined against SqueezeMetrics (gex/dix start 2011-05,
+    # ~4 months after the panel's VIXY-inception start), the trailing 252-day window can contain
+    # a mix of real and pre-coverage NaN gex values for a stretch after coverage begins. A naive
+    # `a[-1] > a` (or `<`) comparison silently treats NaN as False rather than excluding it, which
+    # would corrupt gex_pct's percentile and quietly zero out gex_neg instead of leaving it NaN.
+    def _gex_pct(a):
+        valid = a[~np.isnan(a)]
+        return (a[-1] > valid).mean() if valid.size else np.nan
+    d["gex_pct"] = d["gex"].rolling(252, min_periods=60).apply(_gex_pct, raw=True).shift(1)
+    d["gex_neg"] = (d["gex"] < 0).astype(float).mask(d["gex"].isna()).shift(1)
 
     # --- flow (DIX = SqueezeMetrics Dark Index, a short-volume/flow signal) ---
     d["dix_l"] = d["dix"].shift(1)
@@ -295,12 +308,20 @@ class CostCfg:
 def sleeve_excess(pos: np.ndarray, asset_ret: np.ndarray, rf_d: np.ndarray,
                   bps: float, borrow_ann: float = 0.0) -> np.ndarray:
     """Daily EXCESS return of a signed-notional sleeve: pos*(asset_ret - rf) - costs - borrow.
-    (capital earns rf; position adds asset excess return; short pays borrow on |notional|)."""
+    (capital earns rf; position adds asset excess return; short pays borrow on |notional|).
+
+    `pos` is a constant FRACTION of a compounding book, not a constant dollar amount, so holding
+    it flat while equity moves still implies a daily rebalancing trade (short a bit more after a
+    gain, cover a bit after a loss) that a naive `|diff(pos)|` turnover charge misses entirely.
+    Approximated to first order as |pos| * |asset_ret - r_gross|, the day's asset move net of the
+    sleeve's own realized return; this is on top of, not instead of, the existing charge for `pos`
+    itself changing (e.g. the contango gate flipping)."""
     asset_ret = np.nan_to_num(asset_ret, nan=0.0)
     excess_asset = asset_ret - rf_d
-    r = pos * excess_asset
-    turn = np.abs(np.diff(pos, prepend=0.0))
-    r = r - turn * (bps / 1e4)
+    r_gross = pos * excess_asset
+    turn_switch = np.abs(np.diff(pos, prepend=0.0))
+    turn_rebal = np.abs(pos) * np.abs(asset_ret - r_gross)
+    r = r_gross - (turn_switch + turn_rebal) * (bps / 1e4)
     borrow_ann = np.asarray(borrow_ann, float)          # scalar OR per-day array (VIX-conditioned)
     if np.any(borrow_ann != 0):
         short_notional = np.clip(-pos, 0, None)

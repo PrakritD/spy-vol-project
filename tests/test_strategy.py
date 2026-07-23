@@ -187,8 +187,8 @@ def test_pinned_headline_on_synthetic_panel():
     m = S.metrics(pnl, None, "pin")
     assert m["n"] == 739
     assert int((pos != 0).sum()) == 359
-    np.testing.assert_allclose(m["sharpe"], 0.7927492070, atol=1e-8)
-    np.testing.assert_allclose(m["maxdd"], -0.0800484157, atol=1e-8)
+    np.testing.assert_allclose(m["sharpe"], 0.7824559317, atol=1e-8)
+    np.testing.assert_allclose(m["maxdd"], -0.0805927764, atol=1e-8)
 
 
 def test_ml_sizing_is_causal_and_lagged():

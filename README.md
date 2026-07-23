@@ -6,7 +6,7 @@
 
 **So the design problem is not finding the premium; it is surviving it.** This strategy sells volatility only while a market-based warning light is off. When the VIX futures curve slopes upward (one-month VIX below three-month, the normal calm state), it shorts VIXY, an ETF built to bleed value in exactly that state. When the curve inverts, the classic pre-spike signature, it steps aside. The curve usually inverts before the spike, not during it, so the book is already flat when the damage lands.
 
-**The result, 2011–2026, net of costs and borrow:** 8.5%/yr (excess of cash) with a maximum drawdown of −15%, under half of what SPY surrendered through Volmageddon and COVID, with every short-vol blowup of the modern era inside the sample. The durable edge is drawdown depth: −15% vs −34% peak-to-trough, shallower than SPY's in 96% of paired bootstrap resamples, and still −20% vs −34% under realistic next-open fills. Sharpe (0.74) runs just behind buy-and-hold SPY, and the write-up says so plainly.
+**The result, 2011–2026, net of costs and borrow:** 8.1%/yr (excess of cash) with a maximum drawdown of −15%, under half of what SPY surrendered through Volmageddon and COVID, with every short-vol blowup of the modern era inside the sample. The durable edge is drawdown depth: −15% vs −34% peak-to-trough, shallower than SPY's in 96% of paired bootstrap resamples, and still −20% vs −34% under realistic next-open fills. Sharpe (0.72) runs just behind buy-and-hold SPY, and the write-up says so plainly.
 
 **What makes this repo different:**
 
@@ -18,15 +18,15 @@ The rule itself is one line, and no parameter in it was fit on this sample: **sh
 
 **→ Full write-up, attribution, and robustness: [`STRATEGY.md`](STRATEGY.md).**
 
-![Headline dashboard](analysis/figures/strategy_headline.png)
+![Equity and drawdown, VRP carry vs buy-hold SPY](analysis/figures/strategy_hero.png)
 
 ## The three deliverables
 
-1. **[`STRATEGY.md`](STRATEGY.md), the strategy.** The contango-filtered VRP carry above. The construction ladder in §4 isolates where the risk-adjusted return comes from: the term-structure filter more than doubles Calmar (0.23 → 0.56) and halves drawdown (−32% → −15%) by being absent during the regime that produces the losses. Full attribution, cost and borrow stress, and per-regime robustness inside.
+1. **[`STRATEGY.md`](STRATEGY.md), the strategy.** The contango-filtered VRP carry above. The construction ladder in §4 isolates where the risk-adjusted return comes from: the term-structure filter more than doubles Calmar (0.22 → 0.53) and halves drawdown (−32% → −15%) by being absent during the regime that produces the losses. Full attribution, cost and borrow stress, and per-regime robustness inside.
 
 2. **[`FINDINGS.md`](FINDINGS.md), the signal investigation** (also as a [PDF](report/FINDINGS.pdf) with abstract and references). Does dealer gamma carry next-day realized-volatility information beyond VIX? Mostly not: gamma is almost entirely a VIX echo, a clean null on a calm 21-month options window. But on 15 years across real stress regimes there is a small, statistically robust, gamma-specific increment over a full VIX/HAR baseline (Diebold-Mariano on CRPS, **p = 0.001**). The increment is real and economically marginal, which is why §4b of the strategy finds gamma adds nothing once VIX is already in the model.
 
-3. **[`FORECASTING.md`](FORECASTING.md), the ML benchmark.** Every ML component inside STRATEGY.md is a null; this asks the fair-shot question directly: can ML beat a strong classical baseline at forecasting next-day realized volatility? A walk-forward quantile gradient boosting model beats a VIX-augmented HAR baseline on CRPS by 2.9% (**p = 6.7 × 10⁻⁵**); a small MLP on the same features does not (3.5% worse, **p = 2.0 × 10⁻⁴**). Both results are reported with the same prominence.
+3. **[`FORECASTING.md`](FORECASTING.md), the ML benchmark.** Every ML component inside STRATEGY.md is a null; this asks the fair-shot question directly: can ML beat a strong classical baseline at forecasting next-day realized volatility? A walk-forward quantile gradient boosting model beats a VIX-augmented HAR baseline on CRPS by 2.9% (**p = 1.2 × 10⁻⁵**); a small MLP on the same features does not (4.2% worse, **p = 5.5 × 10⁻⁵**). Both results are reported with the same prominence.
 
 ![Deep-history result](analysis/figures/deep_history_result.png)
 

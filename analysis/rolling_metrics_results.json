@@ -1,11 +1,11 @@
 {
   "window_days": 756,
-  "n_windows": 2976,
+  "n_windows": 3036,
   "rolling_sharpe_carry": {
-    "min": 0.00040707003892526095,
-    "median": 0.7565998137611911,
-    "max": 1.4145771392680497,
-    "pct_positive": 1.0
+    "min": -0.011744897366822897,
+    "median": 0.7502480399795479,
+    "max": 1.4012999454648,
+    "pct_positive": 0.9990118577075099
   },
-  "rolling_calmar_carry_gt_spy_pct": 0.5413306451612904
+  "rolling_calmar_carry_gt_spy_pct": 0.5421607378129117
 }
