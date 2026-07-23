@@ -29,12 +29,62 @@ eq["date"] = pd.to_datetime(eq["date"])
 R = json.load(open(f"{REPO}/analysis/strategy_results.json"))
 H = R["headline_metrics"]
 SPYx, SPYt = R["benchmarks"]["buy-hold SPY (excess)"], R["benchmarks"]["buy-hold SPY (total ret)"]
+FACTOR = json.load(open(f"{REPO}/analysis/factor_regression_results.json"))
 
 GREEN, GREY, RED, BLUE = "#27ae60", "#7f8c8d", "#c0392b", "#2c6fbb"
 
 
 def dd(curve):
     a = curve.to_numpy(); return a / np.maximum.accumulate(a) - 1.0
+
+
+# =================== FIGURE 0: README hero (equity + drawdown, 3 callouts) ===================
+# Simpler than the 4-panel dashboard below: one equity/drawdown story, bigger fonts, meant to be
+# read at a glance at the top of README.md. The 4-panel dashboard stays as the detailed STRATEGY.md
+# §3 figure -- this does not replace it, it is a distinct, smaller file.
+fig, (axE, axD) = plt.subplots(2, 1, figsize=(11, 7.5), sharex=True,
+                                gridspec_kw={"height_ratios": [2, 1]})
+
+axE.plot(eq["date"], eq["carry"], color=GREEN, lw=2.2, label="VRP carry (short VIXY in contango)")
+axE.plot(eq["date"], eq["spy_total"], color=GREY, lw=1.4, alpha=0.85, label="Buy-hold SPY")
+axE.set_yscale("log"); axE.set_ylabel("growth of $1 (log)", fontsize=11)
+axE.legend(loc="upper left", fontsize=11, framealpha=0.9)
+axE.grid(alpha=0.25, which="both")
+axE.set_title("Short volatility, but only while the term structure pays you to",
+               fontsize=15, fontweight="bold", pad=12)
+
+axD.fill_between(eq["date"], dd(eq["carry"]) * 100, 0, color=GREEN, alpha=0.55)
+axD.plot(eq["date"], dd(eq["spy_total"]) * 100, color=GREY, lw=1.2)
+axD.set_ylabel("drawdown (%)", fontsize=11)
+axD.grid(alpha=0.25)
+
+# Volmageddon / COVID markers, dates pulled from the same co-drawdown episode table §4e/§6a use.
+for ep in FACTOR["co_drawdowns"]:
+    if "2018-01" in ep["spy_peak"]:
+        label, xdate = "Volmageddon", ep["spy_peak"]
+    elif "2020-02" in ep["spy_peak"]:
+        label, xdate = "COVID crash", ep["spy_peak"]
+    else:
+        continue
+    for a in (axE, axD):
+        a.axvline(pd.Timestamp(xdate), color=RED, ls="--", lw=1.0, alpha=0.6)
+    axD.text(pd.Timestamp(xdate), axD.get_ylim()[0] * 0.92, label, color=RED, fontsize=8.5,
+              rotation=90, va="bottom", ha="right", alpha=0.85)
+
+# Three big-number callouts: the depth edge, Calmar, and cumulative growth.
+callouts = [
+    (f"−{abs(H['maxdd'])*100:.0f}% vs SPY −{abs(SPYt['maxdd'])*100:.0f}%", "max drawdown, under half of SPY's"),
+    (f"Calmar {H['calmar']:.2f}", f"vs SPY {SPYx['calmar']:.2f} (excess)"),
+    (f"{H['final_equity']:.1f}x", "growth of $1, net of costs and borrow"),
+]
+for i, (big, small) in enumerate(callouts):
+    x = 0.02 + i * 0.335
+    fig.text(x, -0.02, big, fontsize=19, fontweight="bold", color=GREEN, ha="left", transform=fig.transFigure)
+    fig.text(x, -0.065, small, fontsize=9.5, color="#444", ha="left", transform=fig.transFigure)
+
+fig.tight_layout(rect=[0, 0.02, 1, 1])
+fig.savefig(f"{FIG}/strategy_hero.png", dpi=150, bbox_inches="tight")
+print("wrote", f"{FIG}/strategy_hero.png")
 
 
 # =================== FIGURE 1: 2x2 headline dashboard ===================
@@ -46,7 +96,7 @@ a.plot(eq["date"], eq["carry"], color=GREEN, lw=1.9, label=f"VRP carry (Sharpe {
 a.plot(eq["date"], eq["spy_total"], color=GREY, lw=1.3, alpha=0.9, label=f"Buy-hold SPY (Sharpe {SPYt['sharpe']:.2f}, maxDD {SPYt['maxdd']*100:.0f}%)")
 a.plot(eq["date"], eq["constant"], color=RED, lw=1.0, alpha=0.65, label="Unfiltered constant short")
 a.set_yscale("log"); a.set_ylabel("growth of $1 (log)")
-a.set_title("Equity: the carry compounds 3.3x steadily,\nwhile the unfiltered short blows up", fontsize=10.5)
+a.set_title(f"Equity: the carry compounds {H['final_equity']:.1f}x steadily,\nwhile the unfiltered short blows up", fontsize=10.5)
 a.legend(loc="upper left", fontsize=8.5, framealpha=0.9); a.grid(alpha=0.25, which="both")
 
 # (0,1) drawdown underwater — THE edge
@@ -54,12 +104,15 @@ a = ax[0, 1]
 a.fill_between(eq["date"], dd(eq["carry"]) * 100, 0, color=GREEN, alpha=0.55, label=f"VRP carry (maxDD {H['maxdd']*100:.0f}%)")
 a.plot(eq["date"], dd(eq["spy_total"]) * 100, color=GREY, lw=1.2, label=f"Buy-hold SPY (maxDD {SPYt['maxdd']*100:.0f}%)")
 a.set_ylabel("drawdown (%)")
-a.set_title(f"Drawdown, the edge: −15% vs SPY −34%\nCalmar {H['calmar']:.2f} vs {SPYx['calmar']:.2f} (under half the depth)", fontsize=10.5)
+a.set_title(f"Drawdown, the edge: {H['maxdd']*100:.0f}% vs SPY {SPYt['maxdd']*100:.0f}%\nCalmar {H['calmar']:.2f} vs {SPYx['calmar']:.2f} (under half the depth)", fontsize=10.5)
 a.legend(loc="lower left", fontsize=9, framealpha=0.9); a.grid(alpha=0.25)
 
 # (1,0) blowup dodging
+# NOTE: strategy_results.json has no "blowup dodging" section (it's console-only output in
+# strategy_two_sleeve.py's main()), so these are a hand-kept duplicate of STRATEGY.md §3's
+# event table -- keep them in sync manually if the backtest changes.
 a = ax[1, 0]
-events = [("Volmageddon\n2018", -3.9, 75), ("COVID\n2020", -5.6, 273), ("2022\nbear", -1.9, -25)]
+events = [("Volmageddon\n2018", -3.9, 75), ("COVID\n2020", -5.6, 273), ("2022\nbear", -2.1, -25)]
 x = np.arange(len(events)); w = 0.38
 a.bar(x - w / 2, [e[1] for e in events], w, color=GREEN, label="strategy P&L")
 a.bar(x + w / 2, [e[2] for e in events], w, color=RED, alpha=0.75, label="long-VIXY move")
@@ -85,7 +138,8 @@ a.set_title("Borrow sensitivity: the carry stays profitable and the\ndrawdown ed
 a.legend(fontsize=8.5, loc="upper right"); a.grid(alpha=0.25)
 
 fig.suptitle("Short-vol VRP carry (short VIXY only in contango): 2011–2026, net of costs+borrow, every blowup in-sample\n"
-             "8.5%/yr at Calmar 0.56 and a −15% drawdown, under half of SPY's −34% (Calmar 0.38) through Volmageddon and COVID",
+             f"{H['cagr']*100:.1f}%/yr at Calmar {H['calmar']:.2f} and a {H['maxdd']*100:.0f}% drawdown, under half of "
+             f"SPY's {SPYt['maxdd']*100:.0f}% (Calmar {SPYx['calmar']:.2f}) through Volmageddon and COVID",
              fontsize=12, y=1.0)
 fig.tight_layout(rect=[0, 0, 1, 0.96])
 fig.savefig(f"{FIG}/strategy_headline.png", dpi=150, bbox_inches="tight")

@@ -25,6 +25,7 @@ v1-writeup.md
 **/_build/
 report/*.pdf
 !report/FINDINGS.pdf
+!report/risk_tearsheet.pdf
 
 .DS_Store
 .idea/

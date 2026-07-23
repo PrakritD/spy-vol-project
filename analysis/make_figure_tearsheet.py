@@ -6,6 +6,7 @@ Reads artifacts written by analysis/strategy_two_sleeve.py and analysis/risk_tea
   analysis/risk_tearsheet_results.json     (VaR/ES, stress table, rolling beta)
 Produces:
   analysis/figures/risk_tearsheet.png
+  report/risk_tearsheet.pdf   (same figure, vector PDF -- a standalone one-page leave-behind)
 
 Four panels: equity + drawdown (adapted from make_figure_strategy.py's headline dashboard,
 reusing the same data rather than re-deriving it), a VaR/ES bar comparison (historical vs
@@ -129,3 +130,8 @@ fig.suptitle("Risk tearsheet: VRP-carry strategy (short VIXY in contango), 2011-
              fontsize=13, y=0.995)
 fig.savefig(f"{FIG}/risk_tearsheet.png", dpi=150, bbox_inches="tight")
 print(f"wrote {FIG}/risk_tearsheet.png")
+
+REPORT = f"{REPO}/report"
+os.makedirs(REPORT, exist_ok=True)
+fig.savefig(f"{REPORT}/risk_tearsheet.pdf", bbox_inches="tight")
+print(f"wrote {REPORT}/risk_tearsheet.pdf")
