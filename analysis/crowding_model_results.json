@@ -1,0 +1,180 @@
+{
+  "config": {
+    "ordinary_day_quantile": 0.95,
+    "kappa_grid": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "theta_over_mu_grid": [
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "spike_quantile": 0.99,
+    "k_mechanical_frac": 0.0
+  },
+  "impact_calibration": {
+    "lambda_per_dollar": 4.3644641001224125e-10,
+    "lambda_mean_per_dollar": 7.985137639759311e-10,
+    "abs_return_cutoff": 0.08750464988967942,
+    "n_days_total": 3843,
+    "n_days_ordinary": 3650,
+    "n_days_excluded_as_crisis": 193,
+    "typical_dollar_adv": 43419570.351379395,
+    "note": "median of |VIXY return| / VIXY dollar volume over ordinary days only; days above the 95% absolute-return quantile are excluded so no crisis day, Feb 2018 included, informs the impact coefficient"
+  },
+  "payoff_calibration": {
+    "mu_daily_per_unit_short": 0.001701255889493827,
+    "spike_loss_s_per_unit_short": 0.14649836444408507,
+    "spike_prob_p_daily": 0.010072314049586776,
+    "spike_quantile": 0.99,
+    "n_days": 3872,
+    "note": "mu, s and p are measured on realised VIXY returns, not on the strategy's own P&L, so the equilibrium is not calibrated to the result it is used to interpret"
+  },
+  "critical_crowding": {
+    "kappa=0.5": {
+      "lambda_effective_per_dollar": 2.1822320500612063e-10,
+      "K_star_usd": 4582464087.501384
+    },
+    "kappa=1.0": {
+      "lambda_effective_per_dollar": 4.3644641001224125e-10,
+      "K_star_usd": 2291232043.750692
+    },
+    "kappa=2.0": {
+      "lambda_effective_per_dollar": 8.728928200244825e-10,
+      "K_star_usd": 1145616021.875346
+    }
+  },
+  "amplification_curve": {
+    "K=0.1*K_star": 1.1111111111111112,
+    "K=0.25*K_star": 1.3333333333333333,
+    "K=0.5*K_star": 2.0,
+    "K=0.75*K_star": 4.0,
+    "K=0.9*K_star": 10.000000000000002,
+    "K=0.95*K_star": 19.999999999999982,
+    "K=0.99*K_star": 99.99999999999991
+  },
+  "equilibria": [
+    {
+      "theta_over_mu": 0.25,
+      "theta_aggregate": 0.00042531397237345674,
+      "x_nash": 0.10847661463366814,
+      "x_social": 0.061448848280454355,
+      "nash_over_social": 1.7653156677335542,
+      "nash_exceeds_critical": false,
+      "amplification_at_nash": 1.121675568374569,
+      "amplification_at_social": 1.0654720290608266,
+      "both_converged": true,
+      "K_nash_usd_by_kappa": {
+        "kappa=0.5": 497090190.89251137,
+        "kappa=1.0": 248545095.44625568,
+        "kappa=2.0": 124272547.72312784
+      },
+      "K_social_usd_by_kappa": {
+        "kappa=0.5": 281587140.46350324,
+        "kappa=1.0": 140793570.23175162,
+        "kappa=2.0": 70396785.11587581
+      }
+    },
+    {
+      "theta_over_mu": 0.5,
+      "theta_aggregate": 0.0008506279447469135,
+      "x_nash": 0.09120901075531432,
+      "x_social": 0.055490798967726074,
+      "nash_over_social": 1.6436780953246368,
+      "nash_exceeds_critical": false,
+      "amplification_at_nash": 1.10036302277944,
+      "amplification_at_social": 1.0587509353080722,
+      "both_converged": true,
+      "K_nash_usd_by_kappa": {
+        "kappa=0.5": 417962016.24275535,
+        "kappa=1.0": 208981008.12137768,
+        "kappa=2.0": 104490504.06068884
+      },
+      "K_social_usd_by_kappa": {
+        "kappa=0.5": 254284593.4563636,
+        "kappa=1.0": 127142296.7281818,
+        "kappa=2.0": 63571148.3640909
+      }
+    },
+    {
+      "theta_over_mu": 1.0,
+      "theta_aggregate": 0.001701255889493827,
+      "x_nash": 0.06868586089949749,
+      "x_social": 0.04633144224733356,
+      "nash_over_social": 1.4824891600142334,
+      "nash_exceeds_critical": false,
+      "amplification_at_nash": 1.0737515495747083,
+      "amplification_at_social": 1.0485823317448089,
+      "both_converged": true,
+      "K_nash_usd_by_kappa": {
+        "kappa=0.5": 314750490.89106274,
+        "kappa=1.0": 157375245.44553137,
+        "kappa=2.0": 78687622.72276568
+      },
+      "K_social_usd_by_kappa": {
+        "kappa=0.5": 212312170.22055045,
+        "kappa=1.0": 106156085.11027522,
+        "kappa=2.0": 53078042.55513761
+      }
+    },
+    {
+      "theta_over_mu": 2.0,
+      "theta_aggregate": 0.003402511778987654,
+      "x_nash": 0.0456045053776572,
+      "x_social": 0.03464286582970129,
+      "nash_over_social": 1.3164183818348503,
+      "nash_exceeds_critical": false,
+      "amplification_at_nash": 1.047783655344793,
+      "amplification_at_social": 1.0358860618557255,
+      "both_converged": true,
+      "K_nash_usd_by_kappa": {
+        "kappa=0.5": 208981008.12137786,
+        "kappa=1.0": 104490504.06068893,
+        "kappa=2.0": 52245252.030344464
+      },
+      "K_social_usd_by_kappa": {
+        "kappa=0.5": 158749688.552735,
+        "kappa=1.0": 79374844.2763675,
+        "kappa=2.0": 39687422.13818375
+      }
+    },
+    {
+      "theta_over_mu": 4.0,
+      "theta_aggregate": 0.006805023557975308,
+      "x_nash": 0.02711915365841705,
+      "x_social": 0.022886705601164757,
+      "nash_over_social": 1.1849304190392913,
+      "nash_exceeds_critical": false,
+      "amplification_at_nash": 1.0278751028560134,
+      "amplification_at_social": 1.023422775774682,
+      "both_converged": true,
+      "K_nash_usd_by_kappa": {
+        "kappa=0.5": 124272547.7231279,
+        "kappa=1.0": 62136273.86156395,
+        "kappa=2.0": 31068136.930781975
+      },
+      "K_social_usd_by_kappa": {
+        "kappa=0.5": 104877506.49855427,
+        "kappa=1.0": 52438753.24927714,
+        "kappa=2.0": 26219376.62463857
+      }
+    }
+  ],
+  "wedge_summary": {
+    "n_converged_cells": 5,
+    "min_nash_over_social": 1.1849304190392913,
+    "median_nash_over_social": 1.4824891600142334,
+    "max_nash_over_social": 1.7653156677335542,
+    "all_cells_nash_above_social": true
+  },
+  "strategy_notional_reference": 0.2,
+  "caveats": [
+    "lambda is a linear (Kyle-form) impact coefficient. Real impact is closer to a square root in trade size; linear is what closes the fixed point in a form that can be solved, and it overstates amplification at large K.",
+    "kappa and Theta are free O(1) parameters, swept rather than fitted. Levels of K_nash and K_star inherit that freedom; the Nash-above-social wedge does not, since it follows from m'(K) > 0 for any admissible parameters.",
+    "No crowding observation of any kind enters this file. K_star here is a prediction to be compared against realised crowding in crowding_test.py, not a fit to it."
+  ]
+}
