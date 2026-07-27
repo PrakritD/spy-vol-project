@@ -2,11 +2,11 @@
 
 Index options are structurally expensive. Investors pay up for crash protection they are unwilling to sell, so implied volatility prints persistently above the volatility that actually realizes, and the front of the VIX futures curve sits in contango, each contract rolling down toward a lower spot as it nears expiry. A seller of that curve earns both halves of the gap at once: the spread of implied over realized, and the roll-down as the future converges. Together they are the variance risk premium. The premium is well-documented and dangerous in equal measure, because it accrues quietly for years and then surrenders that accumulation in the few days of a volatility spike.
 
-That asymmetry is the entire design problem. Selling volatility continuously means owning the tail, so this strategy sells only while the term structure is sloped in its favor: short VIXY whenever one-month implied trades below three-month (`VIX < VIX3M`), flat otherwise. Because the curve typically inverts *before* a spike rather than during it, the rule has the position closed by the time the damage lands. Over 2011–2026 (3,791 trading days, every short-vol blowup in the sample), net of costs and borrow, it compounds at **8.1%/yr against a −15.4% maximum drawdown** (excess of cash; roughly 9.9%/yr in total-return terms), under half of what SPY surrendered through Volmageddon and COVID. With fills at the next morning's open instead of the same close, the drawdown is −20.1%, still well under SPY's −33.8% (§5). Sharpe is 0.72 against SPY's 0.76, so the strategy does not win on risk-adjusted return; the drawdown difference is the part that holds up.
+That asymmetry drives the design. Selling volatility continuously means owning the tail, so this strategy sells only while the term structure is sloped in its favor: short VIXY whenever one-month implied trades below three-month (`VIX < VIX3M`), flat otherwise. Because the curve typically inverts *before* a spike rather than during it, the rule has the position closed by the time the damage lands. Over 2011–2026 (3,791 trading days, every short-vol blowup in the sample), net of costs and borrow, it compounds at **8.1%/yr against a −15.4% maximum drawdown** (excess of cash; roughly 9.9%/yr in total-return terms), under half of what SPY surrendered through Volmageddon and COVID. With fills at the next morning's open instead of the same close, the drawdown is −20.1%, still well under SPY's −33.8% (§5). Sharpe is 0.72 against SPY's 0.76, so the strategy does not win on risk-adjusted return; the drawdown difference is the part that holds up.
 
 Runnable evidence: [`analysis/strategy_two_sleeve.py`](analysis/strategy_two_sleeve.py). The companion [`FINDINGS.md`](FINDINGS.md) is the signal investigation behind one of the inputs (does dealer gamma carry volatility information beyond VIX).
 
-**Related work, and what this document adds.** Shorting VIX futures or their ETPs when the term structure is in contango is a published trade, not a discovery made here. Simon and Campasano (2014) document the VIX futures basis as a tradeable signal; Cooper (2013) builds the ETP versions; Whaley (2013) quantifies the ETP roll decay; Alexander and Korovilas (2012) examine the products' behavior across regimes; Cheng (2019) prices the premium's time variation. This document tests it on a 2011–2026 window containing every modern short-vol blowup at full severity, with cost and borrow treated as first-class, selection-aware inference over every variant tried, and a record of the ML sizing layers and dealer-flow overlays that did not improve it (§4b–4d). References are listed at the end.
+**Related work.** Shorting VIX futures or their ETPs when the term structure is in contango is a published trade, not a discovery made here. Simon and Campasano (2014) document the VIX futures basis as a tradeable signal; Cooper (2013) builds the ETP versions; Whaley (2013) quantifies the ETP roll decay; Alexander and Korovilas (2012) examine the products' behavior across regimes; Cheng (2019) prices the premium's time variation. This document tests it on a 2011–2026 window containing every modern short-vol blowup at full severity, with cost and borrow modeled explicitly, selection-aware inference over every variant tried, and a record of the ML sizing layers and dealer-flow overlays that did not improve it (§4b–4d). References are listed at the end.
 
 ---
 
@@ -20,7 +20,7 @@ The vehicle is **short VIXY** (ProShares VIX Short-Term Futures ETF, inception J
 
 > **Short a fixed, modest notional of VIXY whenever `VIX < VIX3M`. Flatten otherwise.**
 
-`VIX/VIX3M` is the most-documented term-structure signal there is, and no parameter in the rule was fit on this sample: the rule comes from the prior literature, and the boundary at `1.0` is the structural point where the curve crosses from contango into backwardation (`VIX = VIX3M`), not a fitted threshold. Both indices are end-of-day, so the signal is read from the prior close and the position is held over the next close-to-close day, which removes any look-ahead (the no-lookahead invariant is enforced by a future-perturbation test; see §9). P&L is close-to-close, costs are 10 bps per unit of turnover, and the short pays a borrow fee that §5 stresses across a wide range.
+`VIX/VIX3M` is a widely documented term-structure signal, and no parameter in the rule was fit on this sample: the rule comes from the prior literature, and the boundary at `1.0` is the structural point where the curve crosses from contango into backwardation (`VIX = VIX3M`), not a fitted threshold. Both indices are end-of-day, so the signal is read from the prior close and the position is held over the next close-to-close day, which removes any look-ahead (the no-lookahead invariant is enforced by a future-perturbation test in `tests/test_strategy.py`). P&L is close-to-close, costs are 10 bps per unit of turnover, and the short pays a borrow fee that §5 stresses across a wide range.
 
 ## 3. Performance
 
@@ -37,7 +37,7 @@ The carry compounds 3.2x over the window on under half of SPY's drawdown, and it
 
 ![Headline dashboard: equity, drawdown, blowup-dodging, borrow sensitivity](analysis/figures/strategy_headline.png)
 
-**It dodges the blowups, verified in-sample.** The filter flattens the short as the term structure inverts into a spike, then re-enters once the curve normalizes:
+**It avoids the blowups, in-sample.** The filter flattens the short as the term structure inverts into a spike, then re-enters once the curve normalizes:
 
 | Event | strategy P&L over window | long-VIXY move | time in-market |
 |---|---|---|---|
@@ -45,11 +45,11 @@ The carry compounds 3.2x over the window on under half of SPY's drawdown, and it
 | **COVID crash 2020** | **−5.6%** | +273% | 12% |
 | 2022 bear | −2.1% | −25% | 94% |
 
-A daily signal cannot react inside the intraday Feb-5-2018 spike, which is the −3.9% figure, but it sidesteps the catastrophe that a constant short walks straight into.
+A daily signal cannot react inside the intraday Feb-5-2018 spike, which is the −3.9% figure, but it avoids the far larger loss a constant short takes.
 
 ## 4. Where the profit comes from
 
-### 4a. Attribution: the contango filter is the lever
+### 4a. Attribution: the contango filter drives the result
 
 Building the position one control at a time isolates which decision earns the risk-adjusted return:
 
@@ -61,7 +61,7 @@ Building the position one control at a time isolates which decision earns the ri
 | &nbsp;&nbsp;&nbsp;alt: continuous roll-yield sizing | 0.61 | 0.36 | −32.4% |
 | 4. + extra signal gates (gamma/vvix/vix_z/liq) | 0.42 | 0.24 | −14.4% |
 
-A constant short already earns the premium (Sharpe 0.55), but it pays for it with a −32% drawdown. Vol-targeting alone is roughly neutral on VIXY, because the asset's payoff is driven by where it sits on the curve rather than by recent realized vol. The contango filter is what converts the raw premium into a managed one: it more than doubles Calmar (0.22 → 0.53) and halves the drawdown (−32% → −15%) by simply being absent during the regime that produces the losses. Layering further gates on top (row 4) only sacrifices carry without buying additional protection.
+A constant short already earns the premium (Sharpe 0.55), but it pays for it with a −32% drawdown. Vol-targeting alone is roughly neutral on VIXY, because the asset's payoff is driven by where it sits on the curve rather than by recent realized vol. The contango filter converts the raw premium into a managed one: it more than doubles Calmar (0.22 → 0.53) and halves the drawdown (−32% → −15%) by simply being absent during the regime that produces the losses. Layering further gates on top (row 4) only sacrifices carry without buying additional protection.
 
 ![Construction ladder and signal attribution](analysis/figures/strategy_research.png)
 
@@ -76,11 +76,11 @@ Adding any single risk signal *on top of* the contango filter moves the metrics 
 | + VIX z-score | −0.09 | −0.05 | hurts (marginal maxDD help only) |
 | + liquidity (Amihud) | −0.07 | −0.10 | hurts |
 
-Dealer gamma adding essentially nothing here is the trading-side corroboration of the signal study: gamma's incremental information beyond VIX is real but tiny, and a position overlay is exactly where tiny rounds to zero. The term-structure signal already prices the regime these add-ons are trying to detect.
+Dealer gamma adding essentially nothing here is the trading-side corroboration of the signal study: gamma's incremental information beyond VIX is real but tiny, and a position overlay is too coarse to use it. The term-structure signal already prices the regime these add-ons are trying to detect.
 
 ### 4c. A learned sizing layer was tested and does not beat the rule
 
-The natural next question is whether the binary in/out gate leaves size on the table, so I built a walk-forward regularized-linear (Ridge) model that predicts next-day carry from the term structure, vol-of-vol, realized-vol lags, and gamma, then sizes the short to the predicted magnitude. It does not help. Sizing the magnitude *within* the contango gate returns Calmar 0.24 at a −18% drawdown, and letting the model *replace* the gate entirely returns Calmar 0.15 at −26%, against the rule's 0.53 and −15%; the learned variants' Deflated Sharpe (0.21–0.30) sits well below the rule's 0.64–0.79. The model is causal by construction (expanding walk-forward, train-only scaling, an expanding exposure normaliser) and held to the same no-lookahead test as the rest of the book. The term structure already prices what the model is trying to learn, so the parameter-free rule ships.
+The natural next question is whether the binary in/out gate leaves size on the table, so I built a walk-forward regularized-linear (Ridge) model that predicts next-day carry from the term structure, vol-of-vol, realized-vol lags, and gamma, then sizes the short to the predicted magnitude. It does not help. Sizing the magnitude *within* the contango gate returns Calmar 0.24 at a −18% drawdown, and letting the model *replace* the gate entirely returns Calmar 0.15 at −26%, against the rule's 0.53 and −15%; the learned variants' Deflated Sharpe (0.21–0.30) sits well below the rule's 0.64–0.79. The model is causal by construction (expanding walk-forward, train-only scaling, an expanding exposure normaliser) and held to the same no-lookahead test as the rest of the book. The term structure already prices what the model is trying to learn, so the untuned rule ships. For a case where a learned model does help, on forecasting rather than sizing, see [`FORECASTING.md`](FORECASTING.md); that benchmark does not feed this strategy.
 
 ### 4d. A direction sleeve was tested and is a coin flip
 
@@ -90,7 +90,7 @@ A walk-forward logistic (expanding window, monthly refit, 5-day embargo, train-o
 
 The carry is **+0.62 correlated to SPY**, which is the identity of the premium rather than a flaw in the strategy: selling volatility is being short tail risk, which loads on the same bad states as being long equity. That is why its Sharpe lands near SPY's, and why blending it into an equity book does not lift the book's Sharpe much. The differentiation is the drawdown profile, not diversification. The strategy is a capital-efficient way to hold a beta-like risk premium at under half the equity drawdown.
 
-The regression version of that identity ([`analysis/factor_regression.py`](analysis/factor_regression.py)): SPY beta 0.43 (HAC t = 6.5), annualized alpha +3.0% at t = 1.2, not significant; adding the Fama-French five factors and momentum moves the alpha to +3.4% (t = 1.3) with no meaningful loadings beyond the market. The strategy therefore claims no uncorrelated alpha. What the factor view adds is where the beta lives: 0.18 on SPY up-days, 0.42 on down-days, 0.71 while the book is in-market, 0.00 while flat, and +0.01 (t = 0.1) across SPY's worst decile of days, where the filter has already cut the exposure. One caveat stays in view: the book is still in-market on 81% of worst-decile days and takes a level loss there (mean −1.2%/day), so the tail protection is a vanished slope plus the episode record below, not immunity.
+The regression version of that identity ([`analysis/factor_regression.py`](analysis/factor_regression.py)): SPY beta 0.43 (HAC t = 6.5), annualized alpha +3.0% at t = 1.2, not significant; adding the Fama-French five factors and momentum moves the alpha to +3.4% (t = 1.3) with no economically meaningful loadings beyond the market (SMB is +0.07, nominally significant at t = 2.7 but too small to matter). The strategy therefore claims no uncorrelated alpha. What the factor view adds is where the beta lives: 0.18 on SPY up-days, 0.42 on down-days, 0.71 while the book is in-market, 0.00 while flat, and +0.01 (t = 0.1) across SPY's worst decile of days, where the filter has already cut the exposure. One caveat stays in view: the book is still in-market on 81% of worst-decile days and takes a level loss there (mean −1.2%/day), so the tail protection is a vanished slope plus the episode record below, not immunity.
 
 | SPY drawdown > 10% | SPY (total return) | strategy, same dates | time in-market |
 |---|---|---|---|
@@ -104,7 +104,7 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 
 ## 5. Robustness
 
-- **Borrow is the binding cost.** Turnover is light (~12 flips/yr), so the bid-ask spread barely matters (5 → 30 bps moves Sharpe ~0.05). But the book is short, and therefore paying borrow, on ~92% of days, and VIXY is chronically hard to borrow, so borrow is a near-constant drag rather than a rare-stress one:
+- **Borrow is the binding cost.** Turnover is light (~12 flips/yr), so the bid-ask spread barely matters (5 → 30 bps moves Sharpe 0.09). But the book is short, and therefore paying borrow, on ~92% of days, and VIXY is chronically hard to borrow, so borrow is a near-constant drag rather than a rare-stress one:
 
   | VIXY borrow (%/yr) | 0 | 3 (headline) | 5 | 8 | 12 | 18 | 25 |
   |---|---|---|---|---|---|---|---|
@@ -123,7 +123,7 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 
   The realistic next-open fill leaves the return engine intact and pays in drawdown: exits hold the short through one overnight gap, and VIXY gaps hardest on exactly the nights the curve inverts (the Feb 1–15, 2018 window costs −1.8% at the close print and −8.9% under a full extra day of lag). The signal itself is stable at the 4:00pm cutoff: of ~12.5 flips per year, ~3.6 sit within 1% of the contango boundary. Roughly a quarter of the headline drawdown advantage is fill convention, which is why the depth claim is quoted against the next-open row as well (−20% remains well under SPY's −34%).
 
-- **Deflated Sharpe = 0.64–0.79** (N=22 variants). The lower bound uses the empirical Sharpe dispersion across the trial set; the upper bound uses the theory-grounded Bailey–López-de-Prado per-trial null. A DSR comfortably above 0.5 across that range is the selection-aware bar the strategy clears. Holding that same dispersion fixed and asking what the bar would be under more trials than were actually run: 0.49–0.69 at a hypothetical N=50 and 0.37–0.60 at N=100. The theory-grounded (H0) estimate stays above 0.5 out to 10x the trials actually tried; the empirical-dispersion estimate does not, dropping below 0.5 by N=100. The conclusion is not an unqualified order-of-magnitude-robust result, it depends on which dispersion estimate is trusted, and the empirical one is more conservative here. One further caveat: the Bailey–López-de-Prado formula assumes i.i.d. returns, and Lo (2002) shows serial correlation biases the implied standard error of a Sharpe ratio. Carry positions are held for multi-day stretches between the ~12 annual flips, so the daily return series is autocorrelated, and this DSR carries no Lo-style correction for that. The block-bootstrap CI just below is the more dependence-aware check of the two, since it resamples in blocks rather than single days, though its own block length is a design choice, not a formally derived one.
+- **Deflated Sharpe = 0.64–0.79** (N=22 variants). The lower bound uses the empirical Sharpe dispersion across the trial set; the upper bound uses the theory-grounded Bailey–López-de-Prado per-trial null. A DSR comfortably above 0.5 across that range is the selection-aware bar the strategy clears. This is a per-study figure: it prices the variants tried inside this document, not the search conducted across the repo's other studies (gamma, DIX, skew, crowding, the sizing and direction sleeves). [`CROWDING.md`](CROWDING.md) §6 states that project-level caveat. Holding that same dispersion fixed and asking what the bar would be under more trials than were actually run: 0.49–0.69 at a hypothetical N=50 and 0.37–0.60 at N=100. The theory-grounded (H0) estimate stays above 0.5 across every N tabulated; the empirical-dispersion estimate does not, dropping below 0.5 by N=100. The conclusion is not an unqualified order-of-magnitude-robust result, it depends on which dispersion estimate is trusted, and the empirical one is more conservative here. One further caveat: the Bailey–López-de-Prado formula assumes i.i.d. returns, and Lo (2002) shows serial correlation biases the implied standard error of a Sharpe ratio. Carry positions are held for multi-day stretches between the ~12 annual flips, so the daily return series is autocorrelated, and this DSR carries no Lo-style correction for that. The block-bootstrap CI just below is the more dependence-aware check of the two, since it resamples in blocks rather than single days, though its own block length is a design choice, not a formally derived one.
 
 - **Block-bootstrap 95% CI on Sharpe: [+0.25, +1.16]; P(Sharpe ≤ 0) = 0.001.** This is significance versus zero with no multiple-testing adjustment; the selection-aware bar is the DSR above.
 
@@ -153,9 +153,9 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   | $10M | $2M | 4.39% | 2.48% |
   | $50M | $10M | 21.97% | 12.41% |
 
-  At ~12.5 flips/yr a $1–10M book is a rounding error on VIXY's tape; a $50M book starts to move the market on flip days, and VIXY is a note, not a future, so its own liquidity caps how much of this can be run in this vehicle at all. That, together with the borrow drag above, is why a futures-level implementation (the SPVXSTR roll, §6/§7) is the version that scales, not this ETF proxy. VIXY is also chronically hard to borrow, and locate availability tends to tighten exactly when the trade wants to be on (into a vol spike), which is a qualitative risk this backtest cannot size from free data.
+  At ~12.5 flips/yr a $1–10M book is a rounding error on VIXY's tape; a $50M book starts to move the market on flip days, and VIXY is a note, not a future, so its own liquidity caps how much of this can be run in this vehicle at all. That, together with the borrow drag above, is why a futures-level implementation (the SPVXSTR roll, §6/§7) is the version that scales, not this ETF proxy. VIXY is also chronically hard to borrow, and locate availability tends to tighten when the trade most wants to be on (into a vol spike), which is a qualitative risk this backtest cannot size from free data.
 
-- **Cross-vehicle generalization.** The same zero-parameter rule, unmodified, run on three other
+- **Cross-vehicle generalization.** The same untuned rule, unmodified, run on three other
   vol ETPs at the identical 0.20 notional ([`analysis/cross_vehicle.py`](analysis/cross_vehicle.py)):
 
   | Vehicle | Window | Sharpe | Calmar | maxDD |
@@ -173,15 +173,14 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   marginally worse (−15.6% vs −15.4%), consistent with the two products sharing the same
   underlying VIX-futures roll with small fee/methodology differences. SVXY, going long in
   contango, needs no borrow at all, which answers the "why pay borrow shorting a hard-to-
-  borrow ETF" question directly: over 2011–2018 (still −1x) it actually posts the strongest
+  borrow ETF" question directly: over 2011–2018 (still −1x) it posts the strongest
   numbers in the table (Sharpe 1.00, Calmar 0.99), but ProShares' February 2018 deleverage to
   −0.5x roughly halves both Sharpe and Calmar for the second half of the sample. The two
   periods are never pooled into one claim because they are different products in substance,
   a −1x fund before 2018-02-28 and a −0.5x fund after. UVXY's 2x leverage cuts the other way:
   it posts the best Sharpe and Calmar of any vehicle in the table, but by far the worst
   drawdown (−22.5%, well past the −15.4% headline and the −20.1% next-open-fill number in the
-  execution-lag row above), the leverage-decay-and-tail tradeoff showing up exactly where it
-  should. None of this is borrow-free ETF alchemy: VIXY and VXX both pay the SAME borrow
+  execution-lag row above), the leverage-decay-and-tail tradeoff showing up where expected. None of this is a borrow-free shortcut: VIXY and VXX both pay the same borrow
   drag documented above, and SVXY's own -0.5x-fund NAV decay is a real cost baked into its
   price rather than a borrow line item, just a differently-shaped one.
 
@@ -233,10 +232,10 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   below it); the first and second half of the test window post similar Sharpes (1.81, 1.46).
   The hit rate falls because the multiplier sits at zero on about half the days the binary
   gate would be short (no confirmed extra contango depth that period), so this is a fewer,
-  better-timed-bets profile, not a higher-hit-rate one. But it is a SINGLE untuned
+  better-timed-bets profile, not a higher-hit-rate one. But it is a single untuned
   specification (six tenors, a 2.0x cap, monthly refits, none swept or cross-validated) on a
   narrow six-year, 931-observation window, with no multiplicity adjustment computed the way
-  the headline's 22-variant deflated Sharpe was. Read this as a promising proof of concept for
+  the headline's 22-variant deflated Sharpe was. Read this as a proof of concept for
   walk-forward carry-magnitude sizing on the real futures curve, not a validated result.
 
 - **Black-76 groundwork for the tail floor.** §7 also proposes a convex left-tail floor (a
@@ -249,7 +248,7 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
   quote: no VIX-options market data is ingested in this project, so sigma is a trailing-60-day
   realized-vol proxy, not an implied vol, and real VIX-option IV trades persistently above
   realized vol (the same premium the whole strategy sells), so every number here understates
-  the real hedge cost. One genuine finding survives that caveat: the proxy price was CHEAPER
+  the real hedge cost. One finding survives that caveat: the proxy price was cheaper
   than the sample average right before two of the three crisis snapshots checked (0.99% of
   forward the day before Lehman, 0.79% the day before the 2010 flash crash, against a 1.9%
   mean), the same blind spot a realized-vol-only hedge would have had walking into both.
@@ -266,7 +265,7 @@ The regression version of that identity ([`analysis/factor_regression.py`](analy
 - **Edge decay.** Post-2018 the Sharpe roughly halves; the recent-regime numbers (~0.49–0.56) are the right forward anchor, not the pooled 0.72.
 - **Capacity and vehicle.** Results ride on VIXY's tradability and on `VIX/VIX3M` as the curve proxy. A futures-level, no-borrow implementation was tried (§5) but only a clean 2008–2013 free-data window is usable, and it did not clearly beat the ETP even there; extending it to the full sample needs a paid futures feed.
 
-## 6a. Risk in standard vocabulary: VaR, ES, stress, beta
+### 6a. Risk in standard vocabulary: VaR, ES, stress, beta
 
 Everything above is stated in Sharpe/Calmar/drawdown terms. For a reader who thinks in VaR and Expected Shortfall, the same carry-sleeve return series ([`analysis/risk_tearsheet.py`](analysis/risk_tearsheet.py)) translates as: 99% 1-day historical VaR is **2.58%**, with Expected Shortfall (the average loss beyond that threshold) at **3.34%**. The sleeve's own recomputed skew and kurtosis (−1.31, 6.11) reconcile to §6's pooled headline numbers exactly. A Cornish-Fisher tail adjustment, which corrects a Gaussian quantile for sample skew and kurtosis, gives a smaller pair here: VaR **1.58%**, ES **2.37%**. That is not the adjustment working as usually advertised: decomposing the expansion shows the negative-skew terms (−0.96 from the linear skew term, −0.64 from the skew² term) dominate the positive kurtosis term (+1.43), pulling the adjusted quantile in *less* conservative than plain Gaussian, let alone historical. This is a known breakdown mode of the Cornish-Fisher expansion at large negative skew, not evidence the true tail is thinner, so the historical estimate, which needs no distributional assumption, is the one to anchor sizing on, not the parametric correction.
 
@@ -282,7 +281,7 @@ The co-drawdown table from §4e reformats directly into a stress-scenario table,
 | 2022 rate-hike bear market | −24.5% | −10.3% | 93% |
 | 2025 tariff-shock selloff | −18.8% | −3.4% | 60% |
 
-A 126-day (~6-month) rolling beta against SPY ranges from **+0.04 to +1.42** (mean +0.63, current +0.55), wider swings than the static full-sample CAPM beta of 0.43 (§4e) shows on its own. The two are not in conflict: the full-sample pooled beta recomputed here is 0.4271, matching §4e's static CAPM beta of 0.4270 almost exactly; the gap to the 0.63 rolling mean is a genuine time-varying-exposure fact; the mean of many short-window ratios is not the same statistic as one ratio computed on the pooled sample. The book's rolling beta rises around 2018 and again through 2022, consistent with §4e's finding that the beta concentrates on down-days and while the book is in-market: the static beta describes the average exposure, the rolling beta shows when that exposure is elevated.
+A 126-day (~6-month) rolling beta against SPY ranges from **+0.04 to +1.42** (mean +0.63, current +0.55), wider swings than the static full-sample CAPM beta of 0.43 (§4e) shows on its own. The two are not in conflict: the full-sample pooled beta recomputed here matches §4e's static CAPM beta of 0.43; the gap to the 0.63 rolling mean reflects real time-varying exposure; the mean of many short-window ratios is not the same statistic as one ratio computed on the pooled sample. The book's rolling beta rises around 2018 and again through 2022, consistent with §4e's finding that the beta concentrates on down-days and while the book is in-market: the static beta describes the average exposure, the rolling beta shows when that exposure is elevated.
 
 ![Risk tearsheet](analysis/figures/risk_tearsheet.png)
 
@@ -290,13 +289,13 @@ Also available as a standalone one-page PDF leave-behind: [`report/risk_tearshee
 
 ## 7. Where this goes next
 
-The three highest-value free-data upgrades all attack the *drawdown*, which is the strategy's actual edge, rather than chasing a Sharpe it structurally cannot win:
+The three highest-value free-data upgrades all target the *drawdown*, where the edge is, rather than the Sharpe the strategy is not built to win:
 
 1. **Continuous, magnitude-scaled roll/slope sizing** to replace the binary switch, sizing on the *predicted magnitude* of the roll rather than its sign. A crude version (sizing directly on the VIX3M-VIX slope, `carry_rollyield` in `analysis/strategy_two_sleeve.py`, with a manually chosen 5% full-scale slope and 2x cap, neither fit on this sample nor drawn from the literature) already under-performs the binary gate; a properly walk-forward PCA slope score on the real futures curve looks considerably better in a narrow 2008-2013 test (§5), but it is one untuned specification on 931 observations with no multiplicity sweep, so validating it the way the headline strategy is validated (a variant sweep, a deflated Sharpe) is the next step before it earns any more weight than a proof of concept.
 2. **Explicit forward-VRP conditioning**: size on model-free implied variance minus a Yang–Zhang realized-variance forecast, cutting exposure as the *ex-ante* premium collapses, which is the regime that precedes blowups.
 3. **A convex left-tail floor** (a VIX-call ladder or SPX put-spread) sized as negative carry, to cap the one thing a daily term-structure gate provably cannot defend: the intraday Feb-2018-style spike. The pricing primitive exists now (§5, Black-76), but it needs real VIX-options quotes, not a realized-vol proxy, before it prices anything but a lower bound.
 
-The dead-ends are equally clear and not worth relitigating: gamma/DIX timing (a VIX echo, see `FINDINGS.md`), naive vol-targeting (neutral on VIXY), fixed roll-yield thresholds (a textbook out-of-sample failure), and backwardation as a re-entry timer. The structural verdict stands: daily short-vol is a beta-like premium, and its only durable differentiation is the drawdown profile.
+The dead-ends are equally clear and not worth relitigating: gamma/DIX timing (a VIX echo, see `FINDINGS.md`), crowding as a mechanistic account of the drawdown edge (falsified or not robust across measures, see [`CROWDING.md`](CROWDING.md)), naive vol-targeting (neutral on VIXY), fixed roll-yield thresholds (a textbook out-of-sample failure), and backwardation as a re-entry timer. Daily short-vol remains a beta-like premium, and the drawdown profile is its only durable differentiation.
 
 ## 8. Reproduce
 

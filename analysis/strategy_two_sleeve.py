@@ -514,10 +514,14 @@ def main():
     print("\n--- BLOWUP DODGING (did the filter flatten INTO the disasters?) ---")
     fc = contango_flag(d)
     sr_carry = pd.DataFrame({"date": d["date"], "vret": vret, "inmkt": fc, "pnl": r_carry}).set_index("date")
+    event_table = {}
     for lbl, a, b in [("Volmageddon 2018", "2018-01-25", "2018-02-12"),
                       ("COVID crash 2020", "2020-02-20", "2020-03-25"),
                       ("2022 bear", "2022-01-01", "2022-12-31")]:
         seg = sr_carry.loc[a:b]
+        event_table[lbl] = {"window": [a, b], "in_market_frac": float(seg["inmkt"].mean()),
+                            "strategy_ret": float(np.prod(1 + seg["pnl"]) - 1),
+                            "long_vixy_ret": float(np.prod(1 + seg["vret"]) - 1)}
         print(f"  {lbl:18s} in-market {seg['inmkt'].mean()*100:3.0f}% of window | strategy "
               f"{(np.prod(1+seg['pnl'])-1)*100:+6.1f}%  while long-VIXY {(np.prod(1+seg['vret'])-1)*100:+5.0f}%")
 
@@ -560,8 +564,14 @@ def main():
     turnover = np.abs(np.diff(pos_carry, prepend=0.0)).sum() / NOTIONAL
     pct_short = float((pos_carry < 0).mean())
     print("\n--- COST / BORROW SENSITIVITY (headline carry; borrow is the binding axis) ---")
+    # Computed, not asserted: this delta used to be a hardcoded "~0.05" in the print string while
+    # the borrow row beside it was calculated, and the literal had drifted from the true value.
+    bps_lo, bps_hi = 5.0, 30.0
+    spread_delta = (metrics(bx(pos_carry, bps_lo, CostCfg().borrow_ann), dates)["sharpe"]
+                    - metrics(bx(pos_carry, bps_hi, CostCfg().borrow_ann), dates)["sharpe"])
     print(f"  turnover ~{turnover:.0f} flips over {len(d)/ANN:.0f}y (~{turnover/(len(d)/ANN):.0f}/yr); "
-          f"short (paying borrow) {pct_short*100:.0f}% of days; spread 5→30bps moves Sharpe only ~0.05.")
+          f"short (paying borrow) {pct_short*100:.0f}% of days; "
+          f"spread {bps_lo:.0f}→{bps_hi:.0f}bps moves Sharpe {spread_delta:.3f}.")
     borrows = [0.0, 0.03, 0.05, 0.08, 0.12, 0.18, 0.25]
     print(f"  {'borrow/yr ->':>14s}  " + "  ".join(f"{b*100:>4.0f}%" for b in borrows))
     sh_row = [metrics(bx(pos_carry, 10, b), dates)["sharpe"] for b in borrows]
@@ -639,7 +649,8 @@ def main():
               ("2018+ (post-XIV)", "2018-01-01", "2027-01-01")]
     sub = {}
     for nm, a, b in splits:
-        mc = subperiod(r_carry, dates, a, b, nm); ms = subperiod(bh_spy, dates, a, b, nm); sub[nm] = mc
+        mc = subperiod(r_carry, dates, a, b, nm); ms = subperiod(bh_spy, dates, a, b, nm)
+        mc = {**mc, "spy_excess_sharpe": ms["sharpe"]}; sub[nm] = mc
         print(f"  {nm:<18s} carry Sharpe {mc['sharpe']:+.2f} (t_HAC {mc['t_hac']:+.1f}) "
               f"Calmar {mc['calmar']:+.2f} maxDD {mc['maxdd']*100:+.0f}%   | SPY-excess Sharpe {ms['sharpe']:+.2f}")
 
@@ -706,6 +717,10 @@ def main():
                          for k, v in addon_M.items()},
         "timing_auc": float(auc), "carry_spy_corr": float(rho), "avg_rf": float(avg_rf),
         "cost_borrow_sharpe": {f"{int(b*100)}pct": s for b, s in zip(borrows, sh_row)},
+        "cost_borrow_calmar": {f"{int(b*100)}pct": c for b, c in zip(borrows, cal_row)},
+        "spread_sensitivity": {"bps_lo": bps_lo, "bps_hi": bps_hi,
+                               "sharpe_delta": float(spread_delta),
+                               "borrow_ann": CostCfg().borrow_ann},
         "vix_borrow_metrics": {"sharpe": m_vb["sharpe"], "calmar": m_vb["calmar"], "maxdd": m_vb["maxdd"]},
         "sharpe_parity_break_borrow": float(cross),
         "dsr": {"range": [min(dsr_emp["dsr"], dsr_h0["dsr"]), max(dsr_emp["dsr"], dsr_h0["dsr"])],
@@ -715,7 +730,9 @@ def main():
         "bootstrap_ci_vs0": [lo, hi, pneg], "fragility": {"minus_top1": s1, "minus_top5": s5, "minus_top10": s10},
         "threshold_sweep": {f"{t:.2f}": metrics(s, dates)["sharpe"] for t, s in thr_streams.items()},
         "subperiods": {nm: {"sharpe": sub[nm]["sharpe"], "t_hac": sub[nm]["t_hac"],
-                            "calmar": sub[nm]["calmar"], "maxdd": sub[nm]["maxdd"]} for nm in sub},
+                            "calmar": sub[nm]["calmar"], "maxdd": sub[nm]["maxdd"],
+                            "spy_excess_sharpe": sub[nm]["spy_excess_sharpe"]} for nm in sub},
+        "event_windows": event_table,
         "regime": {b: {"sharpe": pr_h[b]["sharpe"], "t_hac": pr_h[b]["t_hac"], "n": pr_h[b]["n"],
                        "maxdd": pr_h[b]["maxdd"], "minus_top3": pr_h[b]["sharpe_minus_top3"]}
                    for b in ["pre2020", "2020-21", "2022+"]},
