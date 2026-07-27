@@ -1,7 +1,7 @@
 PY ?= python
 
-.PHONY: install test lint strategy findings forecast figures notebook all clean \
-        deep quote sample data log findings-pdf
+.PHONY: install test lint strategy findings forecast crowding figures notebook all clean \
+        deep quote sample data short-interest log findings-pdf
 
 # ---------------------------------------------------------------- v2 deliverables ----
 install:                        ## editable install + dev tools (pytest, ruff)
@@ -23,6 +23,10 @@ findings:                       ## FINDINGS.md: deep-history gamma study + robus
 forecast:                       ## FORECASTING.md: walk-forward ML benchmark -> analysis/forecast_bench_results.json
 	$(PY) analysis/forecast_bench.py
 
+crowding:                       ## CROWDING.md: closed-form crowding model + the pre-registered P1-P4 tests
+	$(PY) analysis/crowding_model.py
+	$(PY) analysis/crowding_test.py
+
 figures:                        ## regenerate every committed figure
 	$(PY) analysis/make_figure_deep.py
 	$(PY) analysis/make_figure_strategy.py
@@ -37,7 +41,7 @@ findings-pdf:                   ## render FINDINGS.md -> report/FINDINGS.pdf (pa
 		--pdf-engine=xelatex --toc -V geometry:margin=1in -V fontsize=11pt -V colorlinks=true \
 		-V mainfont="Arial Unicode MS" --include-in-header=report/findings_pdf_header.tex
 
-all: findings strategy forecast figures notebook test   ## regenerate the whole v2 deliverable from scratch
+all: findings strategy forecast crowding figures notebook test   ## regenerate the whole v2 deliverable from scratch
 
 log:                             ## append today's close to the live paper-trade log (idempotent)
 	$(PY) analysis/paper_log.py
@@ -47,7 +51,12 @@ log:                             ## append today's close to the live paper-trade
 deep:                           ## free deep-history inputs behind STRATEGY.md/FINDINGS.md (no charge)
 	$(PY) -m ingest.deep_pull
 	$(PY) -m ingest.deep_pull --check
-quote:                          ## dry-run Databento cost estimate (no charge)
+
+short-interest:                 ## free FINRA short interest + ETP splits behind CROWDING.md (no charge)
+	$(PY) -m ingest.short_interest_pull
+	$(PY) -m ingest.short_interest_pull --check
+
+quote:                        ## dry-run Databento cost estimate (no charge)
 	$(PY) -m ingest.databento_pull --quote configs/databento_pulls.yaml
 
 sample:                         ## small sample pull (small charge — verify quote first)

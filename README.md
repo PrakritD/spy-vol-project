@@ -20,13 +20,15 @@ The rule itself is one line, and no parameter in it was fit on this sample: **sh
 
 ![Equity and drawdown, VRP carry vs buy-hold SPY](analysis/figures/strategy_hero.png)
 
-## The three deliverables
+## The four deliverables
 
 1. **[`STRATEGY.md`](STRATEGY.md), the strategy.** The contango-filtered VRP carry above. The construction ladder in §4 isolates where the risk-adjusted return comes from: the term-structure filter more than doubles Calmar (0.22 → 0.53) and halves drawdown (−32% → −15%) by being absent during the regime that produces the losses. Full attribution, cost and borrow stress, and per-regime robustness inside.
 
 2. **[`FINDINGS.md`](FINDINGS.md), the signal investigation** (also as a [PDF](report/FINDINGS.pdf) with abstract and references). Does dealer gamma carry next-day realized-volatility information beyond VIX? Mostly not: gamma is almost entirely a VIX echo, a clean null on a calm 21-month options window. But on 15 years across real stress regimes there is a small, statistically robust, gamma-specific increment over a full VIX/HAR baseline (Diebold-Mariano on CRPS, **p = 0.001**). The increment is real and economically marginal, which is why §4b of the strategy finds gamma adds nothing once VIX is already in the model.
 
 3. **[`FORECASTING.md`](FORECASTING.md), the ML benchmark.** Every ML component inside STRATEGY.md is a null; this asks the fair-shot question directly: can ML beat a strong classical baseline at forecasting next-day realized volatility? A walk-forward quantile gradient boosting model beats a VIX-augmented HAR baseline on CRPS by 2.9% (**p = 1.2 × 10⁻⁵**); a small MLP on the same features does not (4.2% worse, **p = 5.5 × 10⁻⁵**). Both results are reported with the same prominence.
+
+4. **[`CROWDING.md`](CROWDING.md), the mechanism test.** The first study here that starts from a mechanism rather than someone else's signal. Short volatility is modelled as a congestion game: ETPs must buy vega when volatility rises, constrained traders cover into the same move, and the loop amplifies shocks by `1/(1 − λK)`. Traders internalise their own tail loss but not their contribution to `λK`, so the Nash equilibrium sits **1.18 to 1.77** above the social optimum, a wedge that follows from the model rather than from any calibration. Four predictions were pre-registered and **pushed to this repository before the test code existed** ([`CROWDING-PREREG.md`](CROWDING-PREREG.md)); all four fail. A post-hoc placebo shows the one pre-registered pass was market depth wearing a crowding label: the ADV denominator alone, with no short interest in it, reproduces the effect more strongly (**t = −2.59** against **−2.22**). §6 adds the project-level multiplicity note that no per-study deflated Sharpe in this repo accounts for.
 
 ![Deep-history result](analysis/figures/deep_history_result.png)
 
@@ -44,8 +46,9 @@ Both deliverables are built so the result can be trusted whether it is large, sm
 
 | Path | What |
 |---|---|
-| `analysis/` | the deliverables: `strategy_two_sleeve.py` (strategy), `phase1_*` (deep-history signal study), `forecast_bench.py` (ML forecasting benchmark), `make_figure_*` |
-| `STRATEGY.md` / `FINDINGS.md` / `FORECASTING.md` | the three write-ups |
+| `analysis/` | the deliverables: `strategy_two_sleeve.py` (strategy), `phase1_*` (deep-history signal study), `forecast_bench.py` (ML forecasting benchmark), `crowding_model.py` + `crowding_test.py` (the crowding game), `make_figure_*` |
+| `STRATEGY.md` / `FINDINGS.md` / `FORECASTING.md` / `CROWDING.md` | the four write-ups |
+| `CROWDING-PREREG.md` | the crowding study's pre-registration, committed and pushed before its test code existed |
 | `notebooks/strategy_walkthrough.ipynb` | a rendered, re-runnable narrative tying both together |
 | `features/`, `ingest/`, `configs/` | feature engineering, the free-data fetchers, and the two-stage Databento OPRA pull |
 | `tests/` | data-free test suite; the no-lookahead gate runs on synthetic panels, green in CI |
@@ -57,9 +60,11 @@ Both deliverables are built so the result can be trusted whether it is large, sm
 make install        # editable install + dev tools (pandas/numpy/scipy/scikit-learn/pyarrow/matplotlib)
 make test           # data-free test suite (no-lookahead gate on synthetic panels); also runs in CI
 make deep           # fetch the free inputs (yfinance, CBOE, FRED, SqueezeMetrics) + validate VIXY splits
+make short-interest # fetch free FINRA short interest + ETP splits -> data/raw/short_interest/
 make strategy       # VRP-carry backtest + robustness -> analysis/strategy_results.json
 make findings       # deep-history gamma study + robustness decomposition
 make forecast       # walk-forward ML forecasting benchmark -> analysis/forecast_bench_results.json
+make crowding       # crowding model + the pre-registered P1-P4 tests -> analysis/crowding_*_results.json
 make figures        # regenerate the committed figures
 make findings-pdf   # render FINDINGS.md -> report/FINDINGS.pdf (pandoc + LaTeX)
 make log            # append today's close to the live paper-trade log (idempotent)

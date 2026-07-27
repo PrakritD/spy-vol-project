@@ -786,12 +786,23 @@
     "implied_amplification_at_observed_median": 1.0170420575851837
   },
   "volmageddon_case_study": {
-    "n_days_with_reading": 19,
-    "first_reading_date": "2018-02-16",
-    "c1_usd_before_spike": null,
-    "c1_usd_after_spike": 1621383973.07677,
+    "measure": "VIXY short interest only; the aggregate does not exist pre-spike",
+    "aggregate_available_pre_spike": false,
+    "aggregate_unavailable_reason": "c1_usd needs all three long-vol constituents and VXX, the relaunched ETN, has no price history before 2018-01-25",
+    "first_aggregate_reading": "2018-02-16",
     "vixy_return_spike_window": 0.5162943861178659,
     "carry_return_spike_window": -0.0002,
-    "caveat": "single event, in the descriptive pre-break stub; no parameter in the model or in any test is fitted to it"
+    "caveat": "single event, in the descriptive pre-break stub; no parameter in the model or in any test is fitted to it",
+    "last_published_before_spike": {
+      "settlement_date": "2018-01-12",
+      "publication_date": "2018-01-29",
+      "short_interest_shares": 568058.0
+    },
+    "settled_before_spike_but_published_after": {
+      "settlement_date": "2018-01-31",
+      "publication_date": "2018-02-15",
+      "short_interest_shares": 935475.0
+    },
+    "build_pct_invisible_in_real_time": 0.6467948695379697
   }
 }

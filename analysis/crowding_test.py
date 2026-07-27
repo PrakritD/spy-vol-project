@@ -334,22 +334,57 @@ def posthoc_depth_placebo(d: pd.DataFrame, cfg: TestCfg) -> dict:
 
 
 def volmageddon_case_study(full: pd.DataFrame) -> dict:
-    """February 2018, descriptive only: it sits in the pre-break stub by construction."""
-    w = full[(full["date"] >= "2018-01-02") & (full["date"] <= "2018-03-15")]
-    w = w.dropna(subset=["c1_usd"])
-    if w.empty:
-        return {"note": "no published crowding reading inside the window"}
-    spike = full[(full["date"] >= "2018-02-05") & (full["date"] <= "2018-02-09")]
-    return {"n_days_with_reading": int(len(w)),
-            "first_reading_date": str(w["date"].min())[:10],
-            "c1_usd_before_spike": float(w[w["date"] < "2018-02-05"]["c1_usd"].iloc[-1])
-            if (w["date"] < "2018-02-05").any() else None,
-            "c1_usd_after_spike": float(w[w["date"] > "2018-02-09"]["c1_usd"].iloc[0])
-            if (w["date"] > "2018-02-09").any() else None,
-            "vixy_return_spike_window": float((1 + spike["vixy_ret"].fillna(0)).prod() - 1),
-            "carry_return_spike_window": float(spike["carry_ret"].fillna(0).sum()),
-            "caveat": ("single event, in the descriptive pre-break stub; no parameter in the model "
-                       "or in any test is fitted to it")}
+    """February 2018, descriptive only: it sits in the pre-break stub by construction.
+
+    The aggregate c1_usd does not exist before the spike. It requires all three long-volatility
+    constituents, and VXX is the relaunched ETN whose price history starts 2018-01-25, so the first
+    aggregate reading lands after the event. The case study therefore runs on VIXY short interest
+    alone, labelled as one constituent rather than the aggregate.
+
+    What that exposes is more useful than the aggregate would have been. The crowding build into
+    the event was real and it was NOT observable in time: the 65% jump had settled by 2018-01-31 but
+    FINRA did not publish it until 2018-02-15, ten days after the crash. The publication lag that
+    makes this study causally honest also makes the measure blind at the one moment it would have
+    mattered, which is a limitation of the data source, not of the specification.
+    """
+    si = pd.read_parquet(REPO_ROOT / "data" / "raw" / "short_interest" / "VIXY.parquet")
+    for c in ("settlement_date", "publication_date"):
+        si[c] = pd.to_datetime(si[c])
+    spike_start = pd.Timestamp("2018-02-05")
+
+    pub_before = si[si["publication_date"] < spike_start].sort_values("publication_date")
+    settled_before = si[(si["settlement_date"] < spike_start) &
+                        (si["publication_date"] >= spike_start)].sort_values("settlement_date")
+    spike = full[(full["date"] >= spike_start) & (full["date"] <= "2018-02-09")]
+
+    out = {
+        "measure": "VIXY short interest only; the aggregate does not exist pre-spike",
+        "aggregate_available_pre_spike": False,
+        "aggregate_unavailable_reason": ("c1_usd needs all three long-vol constituents and VXX, the "
+                                         "relaunched ETN, has no price history before 2018-01-25"),
+        "first_aggregate_reading": str(full.dropna(subset=["c1_usd"])["date"].min())[:10],
+        "vixy_return_spike_window": float((1 + spike["vixy_ret"].fillna(0)).prod() - 1),
+        "carry_return_spike_window": float(spike["carry_ret"].fillna(0).sum()),
+        "caveat": ("single event, in the descriptive pre-break stub; no parameter in the model or "
+                   "in any test is fitted to it"),
+    }
+    if not pub_before.empty:
+        last = pub_before.iloc[-1]
+        out["last_published_before_spike"] = {
+            "settlement_date": str(last["settlement_date"])[:10],
+            "publication_date": str(last["publication_date"])[:10],
+            "short_interest_shares": float(last["short_interest_shares"])}
+    if not settled_before.empty:
+        hidden = settled_before.iloc[-1]
+        out["settled_before_spike_but_published_after"] = {
+            "settlement_date": str(hidden["settlement_date"])[:10],
+            "publication_date": str(hidden["publication_date"])[:10],
+            "short_interest_shares": float(hidden["short_interest_shares"])}
+        if not pub_before.empty:
+            prev = float(pub_before.iloc[-1]["short_interest_shares"])
+            out["build_pct_invisible_in_real_time"] = float(
+                hidden["short_interest_shares"] / prev - 1.0)
+    return out
 
 
 # -------------------------------------------------------------------- main ----
