@@ -215,3 +215,38 @@ conducted across studies on overlapping data, and the repo currently does not sa
 4. No additional crowding measure, sizing rule, or regression specification is added after results
    exist. If one is added anyway, it is labelled post hoc and excluded from every claim.
 5. The flagship backtest, its fill convention, and its published numbers are not touched.
+
+---
+
+## Appendix A: implementation choices, recorded 2026-07-27 before any result exists
+
+Building the data path surfaced three questions §3 did not pin down. None revises a specification
+above; each fills a gap in one. They are recorded here, with the ingest and feature code committed
+and no P1 through P4 result computed, so the record is checkable rather than asserted.
+
+**A1. Stale readings expire after 25 days.** The series is biweekly and is forward-filled to daily.
+VXX has a real four-month reporting hole from 2019-01-15 to 2019-05-15. Carrying its January
+reading through to May would fabricate four months of constant crowding, so a reading expires 25
+days after publication, just past the roughly 15-day cadence. Relatedly, the aggregate requires
+every constituent: summing across a missing fund would make the total fall when a fund simply was
+not reported, manufacturing a crowding decline that never occurred. This costs roughly half of the
+2019 first-half dates.
+
+**A2. Notional is frozen at the settlement-date price.** Dollar short interest could mark to the
+current price daily, or hold the price at which the position was recorded. The second is used. The
+first would make crowding move daily with the VIXY price, and the VIXY price moves with VIX, so the
+measure would be mechanically contaminated by the quantity §5 exists to rule out. Freezing means
+the measure's daily variation comes from positioning alone.
+
+**A3. Prices are un-adjusted back to contemporaneous terms.** FINRA reports the actual share count
+outstanding at settlement; yfinance back-adjusts historical prices for splits; these ETPs reverse-
+split constantly. Multiplying the two directly overstates notional by the cumulative split factor,
+which reaches 2,500 on UVXY inside this window and produced a $3.1 trillion aggregate on the first
+pass. Split history is now pulled to disk and divided out. The ratio's denominator was never
+affected, since the adjustments cancel in volume times price.
+
+**A note on §3's C2.** C2 = C1/ADV$ is the model's loop gain `λK` only up to a constant, as §3
+states. Making the two numerically commensurable requires care, because `λ` in
+`analysis/crowding_model.py` is calibrated on VIXY-only depth while C1 spans three ETPs. The
+conversion is done explicitly in `analysis/crowding_test.py` rather than assumed, and both sides
+are reported. This does not change C2's definition or its status as primary.
