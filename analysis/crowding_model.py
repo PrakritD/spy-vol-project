@@ -1,14 +1,14 @@
 """Closed-form crowding model for the short-volatility trade (CROWDING.md).
 
-STRATEGY.md justifies the strategy's one durable edge, drawdown depth, with a narrative: the
-contango gate flattens the book before a spike arrives. This script replaces the narrative with a
-model that can fail.
+STRATEGY.md attributes the strategy's drawdown edge to the contango gate flattening the book
+before a spike arrives. That describes what happens without accounting for why the spike is
+violent. This script sets out a candidate account in a form that generates testable predictions.
 
 Setup. Two classes of participant hold short-volatility exposure. Leveraged and inverse volatility
 ETPs rebalance mechanically to maintain constant leverage, so they must BUY vega when volatility
 rises, at a size known in advance and insensitive to price. Discretionary carry traders operate
 under margin or risk-budget constraints and are forced to cover into the same move. Both demands
-point the same way at exactly the wrong moment.
+are same-signed and arrive while the price is already moving against the position.
 
 With linear price impact and aggregate constrained exposure K, an exogenous shock r0 resolves to a
 fixed point:
@@ -19,7 +19,7 @@ m is the amplification multiplier and K* = 1/lam is the critical crowding level 
 is self-amplifying. Below K* shocks are amplified by a finite factor; the loop is a geometric
 series that converges. At K* it does not.
 
-The strategic layer is what makes this a game rather than a feedback diagram. Each trader picks
+The strategic layer is what distinguishes this from a plain feedback loop. Each trader picks
 exposure w_i, and K = sum(w_i) + k_M. Carry is a strategic COMPLEMENT, because the crowd's own
 hedging flows suppress realized volatility and make the trade look better as more capital enters.
 Tail risk is a strategic SUBSTITUTE, because a higher K raises m for everyone holding the trade.
@@ -31,12 +31,12 @@ Two deliberate constraints on the calibration, both pre-registered in CROWDING-P
 
 1. lam is calibrated from ORDINARY-DAY depth only. Days whose absolute VIXY return sits above the
    95th percentile are excluded, so no crisis observation informs the impact coefficient. February
-   2018 is the single clean observation of the loop firing, and a model whose parameters were
+   2018 is the one episode usually read as this loop firing, and a model whose parameters were
    fitted to it could not then be said to predict it.
 2. This script never loads the crowding series at all. It emits K* and the m(K) curve from depth
    data alone. Comparing those to realised crowding, including the February 2018 case study, is
    done in crowding_test.py, after this file's numbers are already fixed. Keeping the model
-   physically separate from the data it is judged against is the point.
+   physically separate from the data it is judged against.
 
 kappa (the vega-rebalance coefficient, how much constrained holders must trade per unit of exposure
 per unit of move) is the one free O(1) parameter. It is swept, not fitted, and every headline is

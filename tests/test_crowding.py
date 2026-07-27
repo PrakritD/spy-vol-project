@@ -95,10 +95,10 @@ def test_crowding_no_lookahead(synth):
     """Perturbing short interest only in the future must not move any earlier value.
 
     The comparison runs right up to the publication date of the FIRST perturbed observation, not to
-    some comfortable fraction of the sample. That margin is the whole point: a leak of a single
-    publication step, such as reading the next reading instead of the last one, only shows up in
-    the days immediately before the boundary. Stopping at the halfway mark leaves a dead zone that
-    hides exactly the bug this test exists to catch, and a gate that cannot fail is not a gate.
+    some comfortable fraction of the sample. A leak of a single publication step, such as reading
+    the next reading instead of the last one, only shows up in the days immediately before the
+    boundary. Stopping at the halfway mark leaves a dead zone that hides the bug this test exists
+    to catch, which is what the first version of this test did.
     """
     base, boundary = synth(si_tail_perturb=1.0)
     bumped, _ = synth(si_tail_perturb=3.0)
@@ -116,7 +116,7 @@ def test_crowding_no_lookahead(synth):
 def test_no_lookahead_gate_actually_fails_on_a_leak(tmp_path, monkeypatch):
     """The gate above must be able to go red. Verified by injecting a real one-step-forward leak.
 
-    Without this, a passing suite proves only that the assertions ran, not that they bite.
+    Without this, a passing suite shows the assertions ran but not that they can fail.
     """
     root = tmp_path / "leak"
     boundary = _write_synthetic(root, si_tail_perturb=1.0)

@@ -10,10 +10,10 @@ existed. Nothing below was chosen after seeing a result.
 
 P4 is the signal test. P1 through P3 are mechanism tests and stand independently of it.
 
-Order matters. The VIX-echo decomposition runs FIRST and is reported regardless of what follows,
-because the dominant failure mode for this chapter is that crowding is a repackaged VIX, which is
-what closed out the gamma study at 97.8% redundancy. Establishing the echo share before making any
-predictive claim is the point; discovering it afterwards would be worthless.
+The VIX-echo decomposition runs FIRST and is reported regardless of what follows, because the
+dominant failure mode for this chapter is that crowding is a repackaged VIX, which is what closed
+out the gamma study at 97.8% redundancy. The echo share is established before any predictive
+claim is made rather than after one.
 
 Sample. ProShares deleveraged SVXY from -1x to -0.5x and UVXY from 2x to 1.5x on 2018-02-28. Per
 the rule STRATEGY.md already applies to SVXY, the periods either side are different products and

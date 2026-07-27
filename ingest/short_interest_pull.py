@@ -10,7 +10,7 @@ Writes:
     data/raw/short_interest/<TICKER>.parquet   per-ETP biweekly series
     data/raw/short_interest_manifest.json      rows, dates, sha256, source, versions
 
-## The publication-date rule, which is the whole point of this file
+## The publication-date rule
 
 FINRA reports short interest against a SETTLEMENT date and disseminates it more than a week later.
 Keying a daily panel on the settlement date would let the panel see a number nobody could have had,
@@ -23,7 +23,7 @@ This module therefore stamps each observation with
     publication_date = settlement_date + 15 calendar days, snapped forward to the next trading day
 
 Fifteen clears every observed scheduled lag with margin. On a biweekly series the extra staleness
-costs nothing; the protection against a lookahead is not optional. `MAX_OBSERVED_SCHEDULED_LAG_DAYS`
+costs little. `MAX_OBSERVED_SCHEDULED_LAG_DAYS`
 records what was measured so the margin can be audited rather than taken on trust, and
 `tests/test_crowding.py` asserts the rule never undershoots it.
 
@@ -34,8 +34,7 @@ rather than a holiday library, so the calendar is by construction the same one t
 
 Verified 2026-07-27: VIXY, UVXY and SVXY each 206 biweekly observations from 2017-12-29, VXX 199
 over the same span with one 120-day gap. The window opens well after VIXY's 2011 inception, so the
-crowding study runs on a shorter sample than the flagship. That is a property of the free data, not
-a choice.
+crowding study runs on a shorter sample than the flagship. No longer free history is available.
 
 Run:  python -m ingest.short_interest_pull            # fetch whatever is missing
       python -m ingest.short_interest_pull --force    # refetch (new vintage)
