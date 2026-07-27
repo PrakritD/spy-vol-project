@@ -1,8 +1,9 @@
 # Architecture and design notes
 
-How the repo is put together, and why. The short version: two self-contained deliverables
-(`STRATEGY.md`, `FINDINGS.md`), each backed by scripts in `analysis/` that run in isolation, with
-the no-lookahead property enforced by an executable test rather than by convention.
+How the repo is put together, and why. The short version: one strategy (`STRATEGY.md`) and three
+investigations (`FINDINGS.md`, `FORECASTING.md`, `CROWDING.md`), each backed by scripts in
+`analysis/` that run in isolation, with the no-lookahead property enforced by an executable test
+rather than by convention.
 
 ## Layout
 
@@ -42,7 +43,7 @@ the same treatment (`test_ml_sizing_is_causal_and_lagged`). Do not relax these t
 
 Free data comes in two trees:
 
-- **Flagship inputs** (STRATEGY.md + FINDINGS.md deep history): `make deep` /
+- **Main strategy inputs** (STRATEGY.md + FINDINGS.md deep history): `make deep` /
   `python -m ingest.deep_pull` fetches yfinance SPY/VIXY/VXX/SVXY/UVXY and VIX3M/VIX9D/VVIX
   (CBOE CDN fallback) into `data/raw/deep/`, FRED `DGS3MO` into
   `data/raw/fred/dgs3mo_deep.parquet`, CBOE `VIX_History.csv` into `data/raw/cboe_vix.csv`, and

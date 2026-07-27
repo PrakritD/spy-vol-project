@@ -7,8 +7,7 @@ every regime block and is statistically significant in two of three (pre-2020 an
 the smaller 2020-21 block, n = 505, is directionally the same but not significant). A small
 MLP on the same features does **not** beat the linear baseline: it scores **4.2% worse**
 than HAR+VIX overall (p = 5.5 × 10⁻⁵), and far worse in the 2020-21 block specifically
-(12.7% worse). This is the repo's one flagship ML win, reported next to its one plainly
-stated ML loss on the same benchmark.
+(12.7% worse). Both results come from the same benchmark and are reported together.
 
 Runnable evidence is in `analysis/forecast_bench.py`. This is a standalone forecasting
 benchmark; it does not feed the strategy in [`STRATEGY.md`](STRATEGY.md) or the signal
@@ -113,7 +112,7 @@ comparison model):
 VIX materially helps HAR (as established, unsurprising, and a useful sanity check on the
 whole pipeline): CW rejects the null everywhere, DM agrees except the smaller 2020-21 block,
 the same DM-conservative-on-nested-models pattern FINDINGS.md documents for gamma. The
-**flagship result** is quantile GBM beating the VIX-augmented baseline itself, DM-significant
+main result is quantile GBM beating the VIX-augmented baseline itself, DM-significant
 overall and in two of three regimes; 2020-21 (n = 505, the shortest block) is directionally
 the same (+0.0022) but underpowered. The MLP does not clear the bar it was given the same
 fair shot at: it is worse than the linear baseline overall, significantly so in both pre-2020
