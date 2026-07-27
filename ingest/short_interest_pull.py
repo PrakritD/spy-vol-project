@@ -63,6 +63,7 @@ SPY_PATH = RAW / "deep" / "SPY.parquet"
 
 FINRA_URL = "https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest"
 TICKERS = ["VIXY", "VXX", "UVXY", "SVXY"]
+SPLITS_PATH = OUT_DIR / "splits.parquet"
 
 # Pinned to the vintage behind the committed strategy_results.json, matching deep_pull.py.
 END = "2026-05-31"
@@ -75,6 +76,43 @@ periods on 2026-07-27 (range 9 to 12 calendar days). PUBLICATION_LAG_DAYS must s
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def pull_splits(force: bool) -> pd.DataFrame:
+    """Split history for the ETPs, needed to make share counts and prices commensurable.
+
+    FINRA reports short interest in the ACTUAL share count outstanding at the settlement date.
+    yfinance, which is what `deep_pull.py` stores, back-adjusts historical prices for splits. These
+    volatility ETPs reverse-split constantly (UVXY 13 times, VIXY 6), so multiplying an unadjusted
+    share count by a back-adjusted price overstates the notional by the entire cumulative split
+    factor. On UVXY that factor reaches 2,500 inside the crowding window alone, which turns a real
+    ~$0.1bn position into a fictitious ~$250bn one.
+
+    Note the denominator of the crowding ratio does NOT have this problem: in volume times price the
+    two adjustments cancel exactly. Only the share-count side needs correcting.
+
+    Stored to disk rather than fetched inside `features/crowding.py`, so the feature stays
+    reproducible and network-free. Kept here rather than in `deep_pull.py` to avoid disturbing the
+    data vintage behind the committed flagship results.
+    """
+    if SPLITS_PATH.exists() and not force:
+        print(f"  {SPLITS_PATH.relative_to(REPO_ROOT)} exists, skipping (--force to refetch)")
+        return pd.read_parquet(SPLITS_PATH)
+
+    import yfinance as yf
+
+    rows = []
+    for t in TICKERS:
+        s = yf.Ticker(t).splits
+        for ts, ratio in s.items():
+            rows.append({"ticker": t,
+                         "date": pd.Timestamp(ts).tz_localize(None).normalize(),
+                         "ratio": float(ratio)})
+    d = pd.DataFrame(rows).sort_values(["ticker", "date"]).reset_index(drop=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    d.to_parquet(SPLITS_PATH, index=False)
+    print(f"  {SPLITS_PATH.relative_to(REPO_ROOT)}  ({len(d)} splits across {d.ticker.nunique()} tickers)")
+    return d
 
 
 def _trading_days() -> pd.DatetimeIndex | None:
@@ -140,7 +178,13 @@ def pull(end: str, force: bool) -> dict:
         print("  WARNING: data/raw/deep/SPY.parquet absent; falling back to a business-day snap "
               "for publication dates. Run `make deep` first for the exact panel calendar.")
 
-    entries: dict = {}
+    splits = pull_splits(force)
+    entries: dict = {str(SPLITS_PATH.relative_to(REPO_ROOT)): {
+        "source": "yfinance Ticker.splits",
+        "sha256": _sha256(SPLITS_PATH),
+        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "rows": len(splits),
+    }}
     for t in TICKERS:
         path = OUT_DIR / f"{t}.parquet"
         if path.exists() and not force:
