@@ -1,4 +1,4 @@
-"""Fetch every free deep-history input behind STRATEGY.md and FINDINGS.md.
+"""Fetch every free deep-history input behind STRATEGY.md and RESEARCH.md.
 
 Writes exactly the files `analysis/strategy_two_sleeve.py::load_panel` and
 `analysis/phase1_deep_history.py` read:

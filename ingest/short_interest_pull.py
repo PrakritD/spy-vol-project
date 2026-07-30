@@ -1,4 +1,4 @@
-"""Fetch FINRA consolidated short interest for the volatility ETPs (CROWDING.md).
+"""Fetch FINRA consolidated short interest for the volatility ETPs (docs/CROWDING.md).
 
 Short interest in a LONG-volatility ETP is short-volatility exposure held by someone. Aggregated
 across the vehicles and weighted by each fund's leverage, it is the only free, direct measure of

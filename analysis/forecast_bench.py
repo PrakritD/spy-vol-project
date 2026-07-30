@@ -1,4 +1,4 @@
-"""FORECASTING.md — walk-forward probabilistic volatility forecasting benchmark.
+"""RESEARCH.md §6 — walk-forward probabilistic volatility forecasting benchmark.
 
 The one place in the repo where ML is set up to legitimately beat a classical baseline
 (every ML component in STRATEGY.md is a null). Target: next-day log realized volatility
@@ -24,9 +24,9 @@ absent from the `trading` env). HAR vs HAR+VIX is a nested comparison (VIX augme
 and gets both CW (point-forecast squared-error, the test's original use) and DM (on the
 CRPS loss differential). HAR+VIX vs the two challengers is non-nested (different model
 families) and gets DM only, on CRPS. Reported overall and per era (pre2020/2020-21/2022+,
-the repo's standard regime split) exactly like FINDINGS.md's decomposition.
+the repo's standard regime split) exactly like RESEARCH.md's decomposition.
 
-Honest-outcome contract: this script and FORECASTING.md report whichever of ML-wins or
+Honest-outcome contract: this script and RESEARCH.md §6 report whichever of ML-wins or
 ML-nulls is actually true. The GBM CRPS is a finite-quantile-grid approximation (11
 quantiles spanning 0.05-0.95); it truncates the tails beyond that range, understating true
 CRPS somewhat for both models equally, so it is fine for a head-to-head comparison but is
@@ -80,7 +80,7 @@ def add_forecast_columns(d: pd.DataFrame) -> pd.DataFrame:
 def build_panel() -> pd.DataFrame:
     """Reuse the flagship's own panel + HAR/VIX feature construction (all already
     shift(1)'d there) so this benchmark shares one definition of the data with
-    STRATEGY.md/FINDINGS.md rather than re-deriving it."""
+    STRATEGY.md/RESEARCH.md rather than re-deriving it."""
     return add_forecast_columns(build_signals(load_panel()))
 
 

@@ -1,4 +1,4 @@
-"""IV-surface / put-skew figure for FINDINGS.md.
+"""IV-surface / put-skew figure for RESEARCH.md.
 
 Reads data/processed/options_panel.parquet directly (not the assembled features panel) and
 inverts IV/delta ONCE via the vectorized solver (features/fast_iv.py, validated against

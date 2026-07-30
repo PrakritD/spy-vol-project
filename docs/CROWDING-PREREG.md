@@ -118,7 +118,7 @@ and are never pooled.
 
 ## 5. Baseline
 
-Every predictive test scores against the richer baseline used in `FINDINGS.md` §5b: lagged VIX
+Every predictive test scores against the richer baseline used in `RESEARCH.md` §5b: lagged VIX
 level, lagged change in VIX, and the three HAR terms (`har_d`, `har_w`, `har_m` from
 `build_signals`). Bare VIX is not an acceptable baseline here.
 
@@ -186,7 +186,7 @@ equals 13. Deflated Sharpe for P4 is reported over the flagship's existing 22 va
 and as a curve to N = 100, following the convention already established in `strategy_results.json`.
 
 Separately, and independent of this chapter's outcome, a project-level multiplicity note is added
-counting every signal family tested across `FINDINGS.md`, `STRATEGY.md` §4b through §4d, the three
+counting every signal family tested across `RESEARCH.md`, `STRATEGY.md` §4b through §4d, the three
 unpublished pilots, and this chapter. Per-study deflated Sharpe does not account for search
 conducted across studies on overlapping data, and the repo currently does not say so anywhere.
 

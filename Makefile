@@ -1,7 +1,7 @@
 PY ?= python
 
-.PHONY: install test lint strategy findings forecast crowding figures notebook all clean \
-        deep quote sample data short-interest log findings-pdf
+.PHONY: install test lint strategy research findings forecast crowding figures notebook all clean \
+        deep quote sample data short-interest log research-pdf
 
 # ---------------------------------------------------------------- v2 deliverables ----
 install:                        ## editable install + dev tools (pytest, ruff)
@@ -16,14 +16,19 @@ lint:                           ## ruff over the live v2 code
 strategy:                       ## STRATEGY.md: VRP-carry backtest + robustness -> analysis/strategy_results.json
 	$(PY) analysis/strategy_two_sleeve.py
 
-findings:                       ## FINDINGS.md: deep-history gamma study + robustness decomposition
+research:                       ## RESEARCH.md: gamma study + ML forecasting benchmark
+	$(PY) analysis/phase1_deep_history.py
+	$(PY) analysis/phase1_robustness.py
+	$(PY) analysis/forecast_bench.py
+
+findings:                       ## alias: the gamma half of RESEARCH.md only
 	$(PY) analysis/phase1_deep_history.py
 	$(PY) analysis/phase1_robustness.py
 
-forecast:                       ## FORECASTING.md: walk-forward ML benchmark -> analysis/forecast_bench_results.json
+forecast:                       ## alias: the ML benchmark half -> analysis/forecast_bench_results.json
 	$(PY) analysis/forecast_bench.py
 
-crowding:                       ## CROWDING.md: closed-form crowding model + the pre-registered P1-P4 tests
+crowding:                       ## docs/CROWDING.md: closed-form crowding model + the pre-registered P1-P4 tests
 	$(PY) analysis/crowding_model.py
 	$(PY) analysis/crowding_test.py
 
@@ -35,24 +40,24 @@ figures:                        ## regenerate every committed figure
 notebook:                       ## execute the narrative walkthrough in-place (embeds outputs)
 	$(PY) -m nbconvert --to notebook --execute --inplace notebooks/strategy_walkthrough.ipynb
 
-findings-pdf:                   ## render FINDINGS.md -> report/FINDINGS.pdf (pandoc + LaTeX)
+research-pdf:                   ## render RESEARCH.md -> report/RESEARCH.pdf (pandoc + LaTeX)
 	mkdir -p report
-	pandoc FINDINGS.md -o report/FINDINGS.pdf \
+	pandoc RESEARCH.md -o report/RESEARCH.pdf \
 		--pdf-engine=xelatex --toc -V geometry:margin=1in -V fontsize=11pt -V colorlinks=true \
 		-V mainfont="Arial Unicode MS" --include-in-header=report/findings_pdf_header.tex
 
-all: findings strategy forecast crowding figures notebook test   ## regenerate the whole v2 deliverable from scratch
+all: research strategy crowding figures notebook test   ## regenerate the whole v2 deliverable from scratch
 
 log:                             ## append today's close to the live paper-trade log (idempotent)
 	$(PY) analysis/paper_log.py
 
 # ---------------------------------------------------------------- data ingest ----
 # (free data is fetched, not committed; the 21-month OPRA sub-study used the Databento flow below)
-deep:                           ## free deep-history inputs behind STRATEGY.md/FINDINGS.md (no charge)
+deep:                           ## free deep-history inputs behind STRATEGY.md/RESEARCH.md (no charge)
 	$(PY) -m ingest.deep_pull
 	$(PY) -m ingest.deep_pull --check
 
-short-interest:                 ## free FINRA short interest + ETP splits behind CROWDING.md (no charge)
+short-interest:                 ## free FINRA short interest + ETP splits behind docs/CROWDING.md (no charge)
 	$(PY) -m ingest.short_interest_pull
 	$(PY) -m ingest.short_interest_pull --check
 

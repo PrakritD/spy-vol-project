@@ -12,7 +12,7 @@ validated element-wise against `features.gex.implied_vol` before being trusted f
 (see tests/test_fast_iv.py).
 
 `features/gex.py`'s scalar implied_vol/compute_contract_greeks are left completely untouched
--- they back the already-published FINDINGS.md gamma numbers, and nothing here calls or
+-- they back the already-published RESEARCH.md gamma numbers, and nothing here calls or
 imports them. This module is used only where the FULL panel needs greeks computed once for
 bulk feature-building (features/assemble.py), not by the existing gamma pipeline.
 """

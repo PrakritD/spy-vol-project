@@ -3,7 +3,7 @@
 Groundwork for STRATEGY.md Sec.7's proposed convex left-tail floor (a VIX-call ladder sized as
 negative carry), demonstrating `black76.py` on the real constant-maturity futures curve built
 in `vix_futures_curve.py`. This is NOT a fitted strategy and NOT a real quote: no VIX-options
-market data is ingested in this project (SPY OPRA options back FINDINGS.md's IV-surface work;
+market data is ingested in this project (SPY OPRA options back RESEARCH.md's IV-surface work;
 VIX options are a separate, unpaid-for feed), so sigma is a realized-vol proxy -- the trailing
 60-day annualized vol of the constant-maturity index's own daily returns -- not a market
 implied vol. Real VIX-option IV runs persistently above this kind of realized-vol proxy (the

@@ -24,7 +24,7 @@ post-hoc diagnostic suggests why: the ADV denominator alone, with no short inter
 reproduces the amplification result at HAC t = −2.59. That diagnostic is labelled and excluded from
 the recorded outcomes.
 
-The measure is not a VIX echo, unlike gamma in `FINDINGS.md`: 25.1% of it is explained by a VIX/HAR
+The measure is not a VIX echo, unlike gamma in `RESEARCH.md`: 25.1% of it is explained by a VIX/HAR
 baseline, against gamma's 97.8%. It carries little information of its own, explaining 1.2% of log
 realized variance alone and 0.013% incremental.
 
@@ -118,7 +118,7 @@ leverage regimes are never pooled.
 
 Every specification was fixed in [`CROWDING-PREREG.md`](CROWDING-PREREG.md) and pushed to this
 repository before `analysis/crowding_test.py` existed, so the ordering is checkable rather than
-asserted. Predictions score against the richer baseline from `FINDINGS.md` §5b (HAR terms, VIX
+asserted. Predictions score against the richer baseline from `RESEARCH.md` §5b (HAR terms, VIX
 level and z-score, two term-structure ratios, VVIX/VIX, and lagged ΔVIX), not bare VIX. HAC
 standard errors throughout.
 
@@ -209,7 +209,7 @@ real work here in any case: with three trials the across-variant dispersion esti
 and the haircut lands near zero.
 
 This note ships whether or not the chapter had found anything, and it applies retroactively to
-`FINDINGS.md` and `STRATEGY.md` §4b through §4d.
+`RESEARCH.md` and `STRATEGY.md` §4b through §4d.
 
 ## 7. Conclusion
 

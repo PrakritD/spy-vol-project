@@ -1,4 +1,4 @@
-"""Evidence figure for FINDINGS.md: mechanism-is-real vs no-incremental-skill.
+"""Evidence figure for RESEARCH.md: mechanism-is-real vs no-incremental-skill.
 
 Left  : log realized vol conditioned on dealer-gamma sign (the mechanism is real).
 Right : incremental-skill test statistic for the six pre-registered formulations

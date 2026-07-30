@@ -536,7 +536,7 @@ def main():
         print(f"  + {s:<22s} {m['sharpe']:>+7.2f} {m['calmar']:>+7.2f} {m['maxdd']*100:>+7.1f}  "
               f"{m['sharpe']-H['sharpe']:>+8.2f} {m['calmar']-H['calmar']:>+8.2f} {(m['maxdd']-H['maxdd'])*100:>+8.1f}")
     print("  An add-on EARNS its place only if it improves risk-adjusted return (Δ>0). "
-          "Gamma ≈ null — consistent with FINDINGS (gamma is ~95% a VIX echo).")
+          "Gamma ≈ null — consistent with RESEARCH.md (gamma is ~95% a VIX echo).")
 
     # =========================== SLEEVE 2: TIMING (a null) ===========================
     from sklearn.metrics import roc_auc_score

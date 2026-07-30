@@ -1,4 +1,4 @@
-"""Headline figure for the deep-history result (FINDINGS.md §5b).
+"""Headline figure for the deep-history result (RESEARCH.md §5b).
 
 Left : gamma's incremental skill over VIX/HAR by regime block (DM stat on CRPS).
 Right: confound decomposition -- it's gamma (not DIX) and not a stale-VIX proxy.

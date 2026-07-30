@@ -1,4 +1,4 @@
-"""Closed-form crowding model for the short-volatility trade (CROWDING.md).
+"""Closed-form crowding model for the short-volatility trade (docs/CROWDING.md).
 
 STRATEGY.md attributes the strategy's drawdown edge to the contango gate flattening the book
 before a spike arrives. That describes what happens without accounting for why the spike is
@@ -27,7 +27,7 @@ Each trader internalises their own tail loss but not their marginal contribution
 a congestion externality on liquidity, and it implies the Nash equilibrium sits above the socially
 optimal exposure, with nothing in the private optimisation stopping it from crossing K*.
 
-Two deliberate constraints on the calibration, both pre-registered in CROWDING-PREREG.md:
+Two deliberate constraints on the calibration, both pre-registered in docs/CROWDING-PREREG.md:
 
 1. lam is calibrated from ORDINARY-DAY depth only. Days whose absolute VIXY return sits above the
    95th percentile are excluded, so no crisis observation informs the impact coefficient. February

@@ -1,4 +1,4 @@
-"""Crowding in the short-volatility trade, from FINRA short interest (CROWDING.md).
+"""Crowding in the short-volatility trade, from FINRA short interest (docs/CROWDING.md).
 
 Short interest in a LONG-volatility ETP (VIXY, VXX, UVXY) is short-volatility exposure held by
 someone. Short interest in the INVERSE fund SVXY is the opposite, long-volatility exposure, so it
@@ -37,7 +37,7 @@ crowding decline that never happened.
 
     c1_usd    leverage-weighted dollar short interest across VIXY, VXX, UVXY
     c2_gain   c1_usd / ADV$, the loop gain of the model in analysis/crowding_model.py up to a
-              constant. PRIMARY, per CROWDING-PREREG.md, chosen by the theory rather than by
+              constant. PRIMARY, per docs/CROWDING-PREREG.md, chosen by the theory rather than by
               inspection of results
     c3_usd    c1_usd net of the leverage-weighted SVXY term
 
@@ -63,7 +63,7 @@ class CrowdingConfig:
     inverse: tuple[str, ...] = ("SVXY",)
 
     leverage: dict[str, float] = field(default_factory=lambda: {
-        # Verified empirically in CROWDING-PREREG.md by regressing each ETP's daily return on
+        # Verified empirically in docs/CROWDING-PREREG.md by regressing each ETP's daily return on
         # VIXY's across the 2018-02-28 ProShares deleverage. The inference window sits entirely
         # after the break, so post-break weights apply throughout.
         "VIXY": 1.0, "VXX": 1.0, "UVXY": 1.5, "SVXY": -0.5,

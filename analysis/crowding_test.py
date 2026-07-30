@@ -1,6 +1,6 @@
-"""Empirical tests of the crowding model: P1 through P4 (CROWDING.md).
+"""Empirical tests of the crowding model: P1 through P4 (docs/CROWDING.md).
 
-Every specification here is fixed in `CROWDING-PREREG.md`, committed and pushed before this file
+Every specification here is fixed in `docs/CROWDING-PREREG.md`, committed and pushed before this file
 existed. Nothing below was chosen after seeing a result.
 
     P1  amplification    high crowding steepens the vol response to an equity shock
@@ -48,7 +48,7 @@ from strategy_two_sleeve import (  # noqa: E402
 from drawdown_inference import path_metrics, stationary_bootstrap_indices  # noqa: E402
 from features.crowding import CrowdingConfig, run as crowding_run  # noqa: E402
 
-# The richer baseline from FINDINGS.md Sec.5b, matching phase1_robustness.py's `base_rich` exactly.
+# The richer baseline from RESEARCH.md Sec.5b, matching phase1_robustness.py's `base_rich` exactly.
 BASE = ["har_d", "har_w", "har_m", "vix_l", "vix_z", "t_9_30", "t_30_90", "vvix_vix", "dvix"]
 
 BREAK_DATE = "2018-02-28"      # ProShares deleverage; inference starts the following day
@@ -300,7 +300,7 @@ def model_comparison(d: pd.DataFrame, full: pd.DataFrame) -> dict:
 
 
 def posthoc_depth_placebo(d: pd.DataFrame, cfg: TestCfg) -> dict:
-    """POST HOC, labelled as such and excluded from every claim per CROWDING-PREREG.md Sec.9.4.
+    """POST HOC, labelled as such and excluded from every claim per docs/CROWDING-PREREG.md Sec.9.4.
 
     P1 passes on the primary measure but reverses sign on the other two, which differ from it only
     by the ADV$ denominator. That points at market depth rather than crowding, so this runs the
@@ -412,7 +412,7 @@ def main() -> int:
 
     out = {
         "config": asdict(cfg),
-        "prereg": "CROWDING-PREREG.md (committed and pushed before this file existed)",
+        "prereg": "docs/CROWDING-PREREG.md (committed and pushed before this file existed)",
         "sample": {"inference_start": str(d["date"].min())[:10],
                    "inference_end": str(d["date"].max())[:10],
                    "n_days": int(len(d)),

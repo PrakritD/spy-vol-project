@@ -1,7 +1,7 @@
 # Architecture and design notes
 
 How the repo is put together, and why. The short version: one strategy (`STRATEGY.md`) and three
-investigations (`FINDINGS.md`, `FORECASTING.md`, `CROWDING.md`), each backed by scripts in
+investigations (`RESEARCH.md`, `docs/CROWDING.md`), each backed by scripts in
 `analysis/` that run in isolation, with the no-lookahead property enforced by an executable test
 rather than by convention.
 
@@ -10,7 +10,7 @@ rather than by convention.
 ```
 analysis/strategy_two_sleeve.py   the STRATEGY backtest: signals -> contango-filtered carry
                                   -> ladder/attribution/ablation -> robustness -> strategy_results.json
-analysis/phase1_deep_history.py   the FINDINGS deep-history DM-on-CRPS test, per regime block
+analysis/phase1_deep_history.py   the RESEARCH deep-history DM-on-CRPS test, per regime block
 analysis/phase1_robustness.py     gamma-vs-DIX + richer-VIX confound decomposition
 analysis/phase0_gonogo.py         21-month OPRA sub-study (level claim)
 analysis/phase05_reframe.py       21-month sub-study (path/dynamics/tails/regime)
@@ -22,7 +22,7 @@ analysis/make_figure*.py          figures; make_figure_deep.py has stats inline 
 ```
 
 `features/`, `ingest/`, `configs/` hold feature engineering and the Databento OPRA pull. The
-21-month options sub-study in `FINDINGS.md` (the signed by-strike gamma profile) uses them; the
+21-month options sub-study in `RESEARCH.md` (the signed by-strike gamma profile) uses them; the
 strategy and deep-history code do not import from them.
 
 ## No-lookahead invariants
@@ -43,7 +43,7 @@ the same treatment (`test_ml_sizing_is_causal_and_lagged`). Do not relax these t
 
 Free data comes in two trees:
 
-- **Main strategy inputs** (STRATEGY.md + FINDINGS.md deep history): `make deep` /
+- **Main strategy inputs** (STRATEGY.md + RESEARCH.md deep history): `make deep` /
   `python -m ingest.deep_pull` fetches yfinance SPY/VIXY/VXX/SVXY/UVXY and VIX3M/VIX9D/VVIX
   (CBOE CDN fallback) into `data/raw/deep/`, FRED `DGS3MO` into
   `data/raw/fred/dgs3mo_deep.parquet`, CBOE `VIX_History.csv` into `data/raw/cboe_vix.csv`, and

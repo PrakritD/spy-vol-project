@@ -172,7 +172,7 @@ b2 = axR.barh(range(len(feats)), dcal, color=[GREEN if v > 0 else RED for v in d
 axR.axvline(0, color="k", lw=0.9)
 axR.set_yticks(range(len(feats))); axR.set_yticklabels([f"+ {f}" for f in feats], fontsize=9.5)
 axR.set_xlabel("Δ Calmar vs the filter-only headline")
-axR.set_title("Signal attribution (add-one): no overlay improves on the\nfilter; gamma is null, consistent with FINDINGS (gamma is a VIX echo)", fontsize=11)
+axR.set_title("Signal attribution (add-one): no overlay improves on the\nfilter; gamma is null, consistent with RESEARCH.md (gamma is a VIX echo)", fontsize=11)
 for bi, v in zip(b2, dcal):
     axR.text(0.004, bi.get_y() + bi.get_height() / 2, f"{v:+.2f}", va="center", ha="left", fontsize=8.5, color="#333")
 axR.set_xlim(min(dcal) * 1.25, 0.03); axR.invert_yaxis()

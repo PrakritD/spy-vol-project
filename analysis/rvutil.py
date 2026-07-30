@@ -1,5 +1,5 @@
 """Yang-Zhang OHLC realised-volatility, vendored into analysis/ so the deliverables
-(FINDINGS deep-history + STRATEGY) have ZERO dependency on the `features/` tree. The
+(RESEARCH deep-history + STRATEGY) have ZERO dependency on the `features/` tree. The
 21-month OPRA sub-study still imports `features/` directly.
 
 Single-day Yang-Zhang-style RV from daily OHLC: an overnight close-to-open variance plus a

@@ -6,7 +6,7 @@ put-call parity and the standard boundary limits. `demo_tail_floor_cost.py` uses
 illustratively, what a 30-day out-of-the-money VIX call would have cost across the
 constant-maturity futures curve built in `vix_futures_curve.py` -- using a realized-vol proxy
 for sigma, since no real VIX-options quotes are ingested in this project (SPY OPRA options are
-ingested for FINDINGS.md's IV-surface work; VIX options are a different, unpaid-for feed).
+ingested for RESEARCH.md's IV-surface work; VIX options are a different, unpaid-for feed).
 
 F = forward/futures price, K = strike, T = years to expiry, r = continuously-compounded
 risk-free rate, sigma = annualized lognormal vol of the forward.

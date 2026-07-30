@@ -4,14 +4,22 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-A short-volatility **VRP-carry strategy** on SPY (`STRATEGY.md`, the flagship: short VIXY when
-`VIX < VIX3M`, flat otherwise; Sharpe 0.74, Calmar 0.56, maxDD −15%; the durable edge is drawdown
-control, not a Sharpe beat) plus the signal investigation behind one candidate input
-(`FINDINGS.md`: dealer gamma is almost entirely a VIX echo, with a small, robust, economically
-marginal increment on deep history) plus a standalone ML forecasting benchmark
-(`FORECASTING.md`: quantile gradient boosting beats a VIX-augmented HAR baseline on next-day RV
-CRPS; a small MLP on the same features does not). Design notes, data-flow detail, and the
-reasoning behind all three live in `docs/ARCHITECTURE.md`; read it before structural changes.
+Two top-level documents. `RESEARCH.md` is the narrative spine: dealer gamma is almost entirely a
+VIX echo (97.8%), with a small, robust, economically marginal increment on deep history, followed
+by §6's ML forecasting benchmark where quantile gradient boosting beats a VIX-augmented HAR
+baseline on next-day RV CRPS and a small MLP does not. `STRATEGY.md` is the short-volatility
+**VRP-carry strategy** the gamma work failed to improve: short VIXY when `VIX < VIX3M`, flat
+otherwise; Sharpe 0.72, Calmar 0.53, maxDD −15%; the durable edge is drawdown control, not a
+Sharpe beat.
+
+Secondary material lives in `docs/`: `ROBUSTNESS-APPENDIX.md` (cross-vehicle, real-futures
+reconstruction, PCA sizing, Black-76), and `CROWDING.md` + `CROWDING-PREREG.md` (a pre-registered
+null, demoted from root but kept intact for the timestamped prereg). Design notes and data-flow
+detail are in `docs/ARCHITECTURE.md`; read it before structural changes.
+
+Prose in the two root docs is deliberately first-person and low-hedge, aimed at a non-quant
+reader first. Do not reintroduce inline caveats on every claim; caveats belong grouped, or in the
+appendix.
 
 Analyses run in the `trading` conda env (`python`; pyarrow/scikit-learn/scipy; statsmodels is
 absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed (vendor ToS).
@@ -21,12 +29,12 @@ absent, so OLS/Newey-West/CRPS are hand-rolled). Data is fetched, not committed 
 | Where | What lives there |
 |---|---|
 | `analysis/strategy_two_sleeve.py` | the flagship backtest; writes `strategy_results.json`, `strategy_equity.parquet`, `strategy_curves.csv` |
-| `analysis/phase1_*.py`, `phase0_gonogo.py`, `phase05*.py`, `phase_skew.py` | the FINDINGS deep-history + 21-month OPRA sub-studies (gamma level/path/profile, then put-call skew) |
+| `analysis/phase1_*.py`, `phase0_gonogo.py`, `phase05*.py`, `phase_skew.py` | RESEARCH.md's deep-history + 21-month OPRA sub-studies (gamma level/path/profile, then put-call skew) |
 | `features/opra_panel.py`, `assemble.py`, `gex.py`, `skew.py`, `fast_iv.py` | raw OPRA DBN -> `options_panel.parquet` -> `features_panel.parquet`; `fast_iv.py` is a vectorized IV solver validated against `gex.py`'s scalar one (see `tests/test_fast_iv.py`), used for bulk panel builds only |
 | `analysis/strategy_results.json` | the single source of every number quoted in STRATEGY.md |
 | `analysis/strategy_curves.csv` | committed, ToS-clean equity curves; the notebook's only data input |
-| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py`, `gap_risk_mc.py`, `cross_vehicle.py`, `vix_futures_curve.py`, `vix_futures_term_pca.py`, `black76.py`, `black76_tail_floor_demo.py`, `risk_tearsheet.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–6a |
-| `analysis/forecast_bench.py` | FORECASTING.md's walk-forward ML benchmark (HAR/HAR+VIX vs quantile GBM/MLP); writes `forecast_bench_results.json` |
+| `analysis/execution_lag.py`, `factor_regression.py`, `drawdown_inference.py`, `gap_risk_mc.py`, `cross_vehicle.py`, `vix_futures_curve.py`, `vix_futures_term_pca.py`, `black76.py`, `black76_tail_floor_demo.py`, `risk_tearsheet.py` | standalone robustness studies; each writes its own `*_results.json` quoted in STRATEGY.md §4e–6a or docs/ROBUSTNESS-APPENDIX.md |
+| `analysis/forecast_bench.py` | RESEARCH.md §6's walk-forward ML benchmark (HAR/HAR+VIX vs quantile GBM/MLP); writes `forecast_bench_results.json` |
 | `analysis/paper_log.py` | live paper-trade log; appends one row/session to committed `paper_log.csv` |
 | `ingest/deep_pull.py` | fetches every flagship data input; manifest in `data/raw/deep_manifest.json` |
 | `ingest/vix_futures_pull.py` | free CBOE per-contract VIX futures archive; manifest in `data/raw/vix_futures_manifest.json` |
@@ -43,13 +51,12 @@ make deep                    # fetch free deep-history inputs (yfinance/CBOE/FRE
 make test                    # pytest -q  (data-free; no-lookahead gate on synthetic panels)
 make lint                    # ruff check analysis tests
 make strategy                # STRATEGY.md backtest -> analysis/strategy_results.json
-make findings                # FINDINGS.md deep-history + robustness
-make forecast                # FORECASTING.md walk-forward ML benchmark -> analysis/forecast_bench_results.json
+make research                # RESEARCH.md: gamma deep-history + ML benchmark (findings/forecast are aliases)
 make figures                 # regenerate committed figures
 make notebook                # execute notebooks/strategy_walkthrough.ipynb in place
-make findings-pdf            # render FINDINGS.md -> report/FINDINGS.pdf (pandoc + LaTeX)
+make research-pdf            # render RESEARCH.md -> report/RESEARCH.pdf (pandoc + LaTeX)
 make log                     # append today's close to the live paper-trade log (idempotent)
-make all                     # findings + strategy + forecast + figures + notebook + test
+make all                     # research + strategy + crowding + figures + notebook + test
 ```
 
 Databento ingest is gated to prevent accidental spend (`make quote` estimates cost with no

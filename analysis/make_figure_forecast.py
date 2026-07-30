@@ -1,4 +1,4 @@
-"""Figure for FORECASTING.md.
+"""Figure for RESEARCH.md §6.
 
 Reads analysis/forecast_bench_results.json (written by analysis/forecast_bench.py).
 Produces analysis/figures/forecast_bench.png: per-model mean CRPS with 95% CI, one panel
